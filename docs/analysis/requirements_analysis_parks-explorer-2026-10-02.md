@@ -125,12 +125,12 @@ None block requirements or analysis. Items deferred to `cg-design` (architecture
 - D-06: Confirm the `react-leaflet` major version compatible with React 19.2 at install time.
 
 ## Human Quality Gate
-- Status: Pending
+- Status: Approved
 - Required reviewers: Product owner; technical owner. Security owner not required (no auth, PII, secrets, trust-boundary, or privileged-access concern; untrusted-URL handling is low risk and covered above).
-- Artifact revision: requirements.md sha256 `9de8b75c23bc`
-- Decision and conditions: Re-approval needed. The earlier revision (`475ddcc18039`) was reviewed and approved by the user in conversation ("I reviewed and everything looks good"). The traceability review then added AC-011 to AC-015, which is a material edit, so the gate was reset to Pending.
-- Evidence: Prior approval was a conversation response; no PR or ticket. Pending confirmation for `9de8b75c23bc`.
-- Approved by / at: — (prior revision approved by the user, 2026-10-02)
+- Artifact revision: requirements.md sha256 `9de8b75c23bc` (verified unchanged at approval time)
+- Decision and conditions: Approved, no conditions. History: revision `475ddcc18039` was approved in conversation ("I reviewed and everything looks good"); the traceability review then added AC-011 to AC-015, resetting the gate; the user re-approved revision `9de8b75c23bc`.
+- Evidence: Recorded user response in conversation to the explicit approval question ("Approve"); no PR or ticket.
+- Approved by / at: User (product and technical owner), 2026-10-02 16:36
 
 ## References
 - Input: docs/requirement/requirements.md

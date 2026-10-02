@@ -14,6 +14,7 @@
 
 ### Architecture
 - App Router code lives in `src/app/`; import via `@/*` alias.
+- Organize non-route code under `src/` as: `assets/`, `components/`, `contexts/`, `data/`, `hooks/`, `layouts/`, `lib/` (user-mandated structure; `src/app/` stays for Next.js routing). Do not add other top-level folders under `src/` without approval.
 - Server Components by default; `"use client"` only when needed.
 - Styling with Tailwind utility classes; theme tokens in `src/app/globals.css`.
 - Public API or event changes require a compatibility decision and migration note.
