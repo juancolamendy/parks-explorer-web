@@ -736,7 +736,7 @@ Every phase's **Completion evidence** records: changed files; red-baseline comma
 **Size:** XS
 **Files affected:** `src/hooks/useFocusOnSelect.ts`, `src/hooks/useFocusOnSelect.test.tsx`
 **Task:**
-- [ ] TASK-008 — `useFocusOnSelect`
+- [x] TASK-008 — `useFocusOnSelect`
 
   **Requirements:** REQ-F-007, REQ-NF-002, AC-005, AC-012
   **Design:** DES-009, DES-020, DES-030 (§9.3)
@@ -774,7 +774,25 @@ Every phase's **Completion evidence** records: changed files; red-baseline comma
   | TEST-019 | AC-005 | integration | Secondary — focus mechanics isolated; Primary is Phase 15 | A rendered `<h2 tabIndex={-1}>`; `focusRequest` 0 → 1 → 2 | Rerender with new request numbers; blur between | Not focused at 0; focused at 1; focused again at 2 after blur | No focus on mount | Re-selection |
   | TEST-020 | n/a (DES-009 guards, F5, C1) | integration | Secondary — environment guards and scroll rules | Stubbed `getBoundingClientRect`; `scrollIntoView` and `matchMedia` present, absent, and "reduce" | Rerender with `focusRequest` 1 | Scroll called with `behavior: "smooth"` when off-screen, `"auto"` under reduced motion; not called when fully visible; no exception when either API is absent | No scroll when the heading is already visible | jsdom missing APIs |
 
-  **Completion evidence:** per Phase evidence template.
+  **Completion evidence (2026-10-02, Wave 1 worker in worktree `.worktree/parks-explorer-p8`, branch `plan/parks-explorer-p8`, base `53035ad`; RESULT range 090–109):**
+  - Changed files: `src/hooks/useFocusOnSelect.ts`, `src/hooks/useFocusOnSelect.test.tsx`. No dependencies added.
+  - Docs consulted before coding (Step 2.5): React "Synchronizing with Effects" (focus is a side effect: it belongs in an effect, not in render; a ref object has stable identity) via Context7. `focus({ preventScroll })`, `scrollIntoView`, and `matchMedia` are standard web-platform APIs, not framework-specific.
+  - Red baseline — RESULT-090: `npm test -- src/hooks/useFocusOnSelect.test.tsx` → exit 1; suite failed to load, 0 tests ran: `Failed to resolve import "@/hooks/useFocusOnSelect"` (the expected missing-module failure).
+  - Results:
+    - RESULT-091 — `npm test -- src/hooks/useFocusOnSelect.test.tsx`, exit 0, TEST-019 and TEST-020; 1 file, 15 selected, 15 passed, 0 failed, 0 skipped (TEST-019: 7, TEST-020: 8); no `act` or React warnings.
+    - RESULT-092 — `npm test` (full suite in this worktree): exit 0; 6 files, 99 tests, 99 passed, 0 failed, 0 skipped.
+    - RESULT-093 — `npm run lint`: exit 0.
+    - RESULT-094 — `npm run build` (run once so `.next/types` exists for `tsc`): exit 0.
+    - RESULT-095 — `npx tsc --noEmit`: exit 0.
+    - RESULT-096 — mutation check of the tests (implementation temporarily broken, then restored byte-identical): M1 focus on mount (drop the unchanged-request guard) → 1 failed; M2 refocus on a change back to 0 (drop the zero guard) → 1 failed; M3 never focus → 5 failed; M4 always scroll (drop the in-viewport check) → 1 failed; M5 ignore reduced motion → 1 failed; M6 call `scrollIntoView` unguarded → 1 failed; M7 call `matchMedia` unguarded → 3 failed; M8 wrong scroll block → 4 failed; M9 no empty-ref guard → 1 failed; every run exit 1, so all nine are caught.
+  - Evidence anchors: `src/hooks/useFocusOnSelect.ts:32` (`useFocusOnSelect`), `src/hooks/useFocusOnSelect.test.tsx:50` (TEST-019 group), `src/hooks/useFocusOnSelect.test.tsx:133` (TEST-020 group).
+  - Actual authored LOC: production 37; tests 161 → phase total 198 vs plan 85–125: about 73 over the upper bound (extra guard cases: StrictMode, same-request re-render, partly visible heading, no-reduced-motion, empty ref); under the 400-line phase limit.
+  - Discovered decisions / follow-ups:
+    1. **"Never on mount" is stronger than the plan's guard.** Besides the plan's "no-op when `focusRequest` is 0", the hook remembers the request value present at mount and ignores it, so a remount or a provider that already holds a request above 0 cannot steal focus (Q-007). Cost: one `useRef`. A change back to 0 is also ignored.
+    2. **Focus uses `{ preventScroll: true }`** so the hook, not the browser, decides whether to scroll; scrolling then happens only when the heading is not fully inside the viewport (SDD F5). The visual result of `preventScroll` and of the smooth scroll cannot be seen in jsdom: it belongs to the manual end-to-end checks (TEST-051, Phase 17).
+    3. The hook takes `RefObject<HTMLElement | null>`; Phase 15 (`ParkExplorer`) passes the `ParkDetails` heading ref and the `focusRequest` from `ParksContext`.
+    4. jsdom facts the tests rely on and assert: `window.matchMedia` and `Element.prototype.scrollIntoView` are undefined there (plan C1).
+  - Remaining uncertainty: item 2's real-browser behavior (manual check TEST-051).
 
 **Expected authored LOC:** production +25–35; tests +60–90 (85–125)
 **Success criteria:** 2 tests green; no unhandled exceptions with `scrollIntoView` and `matchMedia` undefined.
@@ -921,7 +939,7 @@ Every phase's **Completion evidence** records: changed files; red-baseline comma
 - [x] Phase 5: Map view helper
 - [x] Phase 6: `ParkMap` component (Wave 1)
 - [x] Phase 7: `ParksContext` and `useParks` (Wave 1)
-- [ ] Phase 8: `useFocusOnSelect` (Wave 1)
+- [x] Phase 8: `useFocusOnSelect` (Wave 1)
 - [ ] Phase 9: Format helpers (Wave 1)
 - [ ] Phase 10: `ParkList` (Wave 2)
 
