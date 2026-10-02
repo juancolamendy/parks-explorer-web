@@ -411,7 +411,7 @@ Every phase's **Completion evidence** records: changed files; red-baseline comma
 **Size:** S
 **Files affected:** `package.json`, `src/hooks/useParksFetch.ts`, `src/hooks/useParksFetch.test.tsx` (+ generated lockfile)
 **Task:**
-- [ ] TASK-004 — `useParksFetch`
+- [x] TASK-004 — `useParksFetch`
 
   **Requirements:** REQ-F-001, REQ-F-009, AC-009, AC-015
   **Design:** DES-008, DES-011, DES-013, DES-022
@@ -451,7 +451,27 @@ Every phase's **Completion evidence** records: changed files; red-baseline comma
   | TEST-009 | AC-009 | resilience | Secondary — race conditions are a distinct risk (F1) | Controlled promises; `StrictMode`; unmount | Mount in `StrictMode`; unmount; `retry` while first request pending | First request's signal aborted on cleanup; stale response ignored; final state from latest request | No state update after unmount or from a superseded request | Double effects, stale response |
   | TEST-010 | AC-015 | integration | Secondary — hook-level data state; Primary is Phase 15 | `[]` and an all-invalid array | Render hook | `ready` with `parks: []` for both | Not `error` | Empty result |
 
-  **Completion evidence:** per Phase evidence template.
+  **Completion evidence (2026-10-02, plan worktree, branch `plan/parks-explorer`):**
+  - Changed files: `package.json` (+ generated `package-lock.json`, excluded per A1), `src/hooks/useParksFetch.ts`, `src/hooks/useParksFetch.test.tsx`.
+  - Dependencies installed (approved dev dependencies): `jsdom@30.1.1`, `@testing-library/react@16.3.3`, `@testing-library/dom@10.4.2`; `npm audit` → 0 vulnerabilities (RESULT-029).
+  - Docs consulted before coding (Step 2.5): React `useEffect` "Fetching data with Effects" (cleanup-time ignore flag; dev StrictMode runs setup/cleanup an extra time); Vitest per-file `@vitest-environment jsdom` docblock and `vi.mock(import(...))` with `vi.mocked`; Testing Library `renderHook` options (`reactStrictMode`, `unmount`, `result.current`).
+  - Red baseline — RESULT-024: `npm test -- src/hooks/useParksFetch.test.tsx` → exit 1; suite failed to load, 0 tests ran: `Failed to resolve import "@/hooks/useParksFetch"` (the expected missing-module failure; the jsdom environment itself loaded).
+  - Results:
+    - RESULT-025 — `npm test -- src/hooks/useParksFetch.test.tsx`, exit 0, TEST-008 to TEST-010; 1 file, 11 selected, 11 passed, 0 failed, 0 skipped (TEST-008: 4, TEST-009: 4, TEST-010: 3); no `act` or React warnings in the output.
+    - RESULT-026 — `npm test` (full suite): exit 0; 4 files, 76 tests, 76 passed, 0 failed, 0 skipped.
+    - RESULT-027 — `npm run lint`: exit 0.
+    - RESULT-028 — `npx tsc --noEmit`: exit 0.
+    - RESULT-029 — `npm audit`: exit 0, 0 vulnerabilities.
+    - RESULT-030 — mutation check of the tests (implementation temporarily broken, then restored byte-identical): M1 apply stale success results → 2 failed; M2 apply stale failures → 1 failed; M3 never abort on cleanup → 4 failed; M4 leak raw error text → 1 failed; M5 retry does not reset to loading → 1 failed; M6 skip normalization → 2 failed; M7 never warn about dropped records → 2 failed; M8 swallow failures without logging → 1 failed; every run exit 1, so all eight are caught.
+  - Evidence anchors: `src/hooks/useParksFetch.ts:34` (`useParksFetch`), `src/hooks/useParksFetch.ts:6` (`FETCH_ERROR_MESSAGE`), `src/hooks/useParksFetch.ts:9` (`ParksStatus`), `src/hooks/useParksFetch.test.tsx:41`, `:108`, `:195` (TEST-008, TEST-009, TEST-010 groups).
+  - Actual authored LOC: production 45; tests 163; config +3 → phase total 211 vs plan 138–199: about 12 over the upper bound (the race cases needed explicit deferred promises); under the 400-line phase limit.
+  - Discovered decisions / follow-ups:
+    1. **Closes the Phase 2 open point:** `makeRawPark` (which uses `structuredClone`) runs correctly under the jsdom environment (used by TEST-009 and TEST-010).
+    2. The StrictMode proof uses Testing Library's documented `reactStrictMode: true` option: two requests are issued, the first is aborted, and only the second's result is applied.
+    3. TEST-010 also covers the SDD DES-022 development warning (a `console.warn` with the count of dropped records, and no warning when nothing is dropped), which the plan listed under this phase's constraints but not in a test row.
+    4. The hook returns a new object on every render; `ParksContext` (Phase 7) memoizes its value, as already planned.
+    5. The development-only warning relies on `process.env.NODE_ENV`; the hook is not yet imported by any page, so a production-bundle check of that guard is deferred to the Phase 16 build.
+  - Remaining uncertainty: item 5 only.
 
 **Expected authored LOC:** production +45–65; tests +90–130; config +3–4 (138–199)
 **Success criteria:** 3 tests green; no `act` warnings; StrictMode run makes the second request the only one applied.
@@ -801,7 +821,7 @@ Every phase's **Completion evidence** records: changed files; red-baseline comma
 - [x] Phase 1: Test harness
 - [x] Phase 2: Park model and `normalizeParks`
 - [x] Phase 3: `fetchParks` client call
-- [ ] Phase 4: `useParksFetch` hook
+- [x] Phase 4: `useParksFetch` hook
 - [ ] Phase 5: Map view helper
 - [ ] Phase 6: `ParkMap` component
 - [ ] Phase 7: `ParksContext` and `useParks`
