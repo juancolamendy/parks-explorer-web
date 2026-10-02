@@ -584,7 +584,7 @@ Every phase's **Completion evidence** records: changed files; red-baseline comma
 **Size:** M
 **Files affected:** `package.json`, `src/components/ParkMap.tsx`, `src/components/ParkMap.test.tsx` (+ generated lockfile)
 **Task:**
-- [ ] TASK-006 — `ParkMap`
+- [x] TASK-006 — `ParkMap`
 
   **Requirements:** REQ-F-004, REQ-F-005, REQ-F-006, REQ-NF-003, REQ-NF-005, CON-002, CON-003, AC-002, AC-008
   **Design:** DES-005, DES-013, DES-025, DES-026, DES-028
@@ -626,7 +626,34 @@ Every phase's **Completion evidence** records: changed files; red-baseline comma
   | TEST-015 | AC-008 | resilience | Secondary — notice behavior at component level; Primary is Phase 15 | Rendered map; fire `tileerror` several times | Dispatch `tileerror` on the tile layer | One `role="status"` notice; markers still present and clickable | Notice not duplicated per tile | Tile failure |
   | TEST-016 | n/a (DES-025 design control) | integration | Secondary — accessible name and non-colour selected cue | `selectedParkId` set to one park | Render | Each marker has a unique `title` and hidden park-name text; selected marker has `data-selected="true"` and a distinct size/ring class | Unselected markers lack both | Colour-only selection |
 
-  **Completion evidence:** per Phase evidence template, plus the feasibility-check note and the R-001 decision reference.
+  **Completion evidence (2026-10-02, Wave 1 worker, worktree `.worktree/parks-explorer-p6`, branch `plan/parks-explorer-p6`, base `53035ad`):**
+  - Changed files: `package.json` (+ generated `package-lock.json`, excluded per A1), `src/components/ParkMap.tsx`, `src/components/ParkMap.test.tsx`.
+  - **R-001:** resolved before this phase (the user agreed with the `react-leaflet` Hippocratic-2.1 licence at plan approval, 2026-10-02 17:09; re-confirmed in the 17:32 re-approval).
+  - Docs consulted before coding (Step 2.5): react-leaflet 5 `MapContainer` (props are immutable after first render; `bounds`/`boundsOptions`), `Marker` (`icon`, `eventHandlers`, `zIndexOffset`), `TileLayer` (`eventHandlers`); Leaflet `divIcon` (`html` is a string or an Element) and its accessibility guidance (markers need a unique `alt`/`title`; for a `divIcon`, custom HTML can carry the label). Source of the installed Leaflet 1.9.4 (`node_modules/leaflet/dist/leaflet-src.js`) read to settle R-002.
+  - Results:
+    - RESULT-040 — dependency installation: `npm install leaflet@1.9.4 react-leaflet@5.0.0` exit 0; `npm install -D @types/leaflet @testing-library/jest-dom @testing-library/user-event` exit 0; `npm ls` → leaflet 1.9.4, react-leaflet 5.0.0, @types/leaflet 1.9.22, @testing-library/jest-dom 7.0.1, @testing-library/user-event 14.6.7; installed licences: leaflet BSD-2-Clause, react-leaflet Hippocratic-2.1, the other three MIT; `npm audit` → 0 vulnerabilities.
+    - RESULT-041 — **R-003 jsdom feasibility check: feasible.** A throwaway scratch test (deleted, not committed; exit 0) showed that Leaflet 1.9.4 with react-leaflet 5.0.0 renders in jsdom: the marker icon is `<div class="leaflet-marker-icon …" title="Park A" tabindex="0" role="button">` and a DOM element passed as `divIcon` `html` renders its child; with `clientWidth`/`clientHeight` stubbed to 400×300 Leaflet creates 4 tiles whose URLs carry the zoom (`…/14/4823/6160.png`), so the initial view is assertable; a click reached the handler; jsdom prints a harmless `Not implemented: Window's scrollTo()` message. The fallback of stubbing `ParkMap` in later explorer tests (assumption A10) is therefore not needed.
+    - RESULT-042 — **R-002 keyboard activation on Leaflet 1.9.4: neither Enter nor Space activates a marker.** From `leaflet-src.js`: `keyboard: true` gives the icon `tabindex=0` and `role=button` (lines 7915–7916); keyboard DOM events are routed to the target layer as `keydown`/`keypress`/`keyup` layer events carrying `originalEvent` (lines 4548–4569), and nothing converts them into a `click` — only a bound popup reacts to Enter (line 10596), and Q-005 chose no popup. The scratch test agreed: Enter and Space produced `keydown` events but zero `click` calls. The SDD-approved fallback was therefore required and is implemented on the layer's own `keydown` event (Enter and Space select and call `preventDefault`, so Space does not scroll the page).
+    - RESULT-043 — red baseline: `npm test -- src/components/ParkMap.test.tsx` → exit 1; suite failed to load, 0 tests ran: `Failed to resolve import "@/components/ParkMap"` (the expected missing-module failure).
+    - RESULT-044 — `npm test -- src/components/ParkMap.test.tsx`, exit 0, TEST-013 to TEST-016; 1 file, 17 selected, 17 passed, 0 failed, 0 skipped (TEST-013: 7, TEST-014: 5, TEST-015: 1, TEST-016: 4).
+    - RESULT-045 — `npm test` (full suite, worker worktree): exit 0; 6 files, 101 tests, 101 passed, 0 failed, 0 skipped.
+    - RESULT-046 — `npm run lint`: exit 0.
+    - RESULT-047 — `npm run build`: exit 0 (run before `tsc` so `.next/types` exists; `ParkMap` is not yet imported by a page).
+    - RESULT-048 — `npx tsc --noEmit`: exit 0.
+    - RESULT-049 — `npm audit`: exit 0, 0 vulnerabilities.
+    - RESULT-050 — mutation check of the tests (implementation temporarily broken, then restored byte-identical; all 18 mutations applied): M1 keys do not `preventDefault` → 1 failed; M2 Space does not select → 2; M3 Enter does not select → 2; M4 any key selects → 1; M5 markers for parks without coordinates → 2; M6 selected pin looks unselected → 1; M7 `data-selected` always false → 2; M8 park name injected as HTML → 1; M9 notice is not a `status` → 1; M10 marker without `title` → 1; M11 initial view ignored → 3; M12 no OSM attribution → 1; M13 no explicit map height → 1; M14 notice always shown → 1; M15 click not wired → 2; M16 tile errors not handled → 1; M17 selected name not announced → 2; M18 no `lg:` height → 1; every run exit 1, so all 18 are caught.
+  - Evidence anchors: `src/components/ParkMap.tsx:94` (`ParkMap`), `:36` (`createMarkerIcon`), `:64` (`ParkMarker`), `:72` (the `keydown` handler), `:16` (tile-failure notice text); `src/components/ParkMap.test.tsx:62`, `:154`, `:227`, `:249` (TEST-013 to TEST-016 groups); `package.json:13`, `:17` (runtime), `:22`, `:24`, `:25` (dev).
+  - Constraint check: `leaflet`/`react-leaflet` are imported only in `src/components/ParkMap.tsx` (grep over `src`); longest function is `ParkMap` at 42 lines (limit 70).
+  - Actual authored LOC: production 108; tests 220; config +5 → phase total 333 vs plan 214–304: about 29 over the upper bound (more cases than estimated, including StrictMode, hostile-name, and 0/1-marker view cases); under the 400-line phase limit.
+  - Discovered decisions / follow-ups:
+    1. **Icons are per park, memoized — not two module-level icons.** The plan constraint "marker icons created once at module level" conflicts with SDD DES-025's requirement of hidden park-name text inside each marker (a name differs per park). Each `ParkMarker` memoizes its icon on `[name, selected]`, so a selection change rebuilds only the two affected icons. Icon content is a DOM element built with `textContent` (park names are untrusted; verified by the hostile-name test), not an HTML string.
+    2. `keyboard: true` is not passed explicitly: it is Leaflet 1.9.4's default (line 7717) and the tests assert `tabindex="0"` and `role="button"`.
+    3. The initial view is verified in jsdom through the tile URLs of a 400×300 stubbed container (world view → zoom 2, one marker → zoom 14, many → within 8–15, all markers inside the container); this supports but does not replace the manual AC-002 check (Phase 17) for a real viewport.
+    4. **Not covered by tests:** `zIndexOffset` for the selected marker (cosmetic), and the `key` that remounts `MapContainer` when the view changes (its view props are immutable, per the react-leaflet docs).
+    5. The visible keyboard focus ring on a marker is the browser default outline; it cannot be asserted in jsdom, so it relies on the manual focus-ring check (TEST-048, Phase 17).
+    6. Phase 15 can use the real `ParkMap` in explorer tests (assumption A10's stub fallback is not needed). Its tile-failure test can dispatch `error` on a real tile `<img>` after stubbing the container size, as TEST-015 does.
+    7. Wave 1 integration notes: `package.json`/lockfile changes here are the only ones in Wave 1 (Phases 7, 8, 9, 12 do not touch them).
+  - Remaining uncertainty: item 3's real-viewport behavior and item 5's focus ring, both owned by the manual checklist.
 
 **Expected authored LOC:** production +100–140; tests +110–160; config +4 (214–304)
 **Success criteria:** 4 tests green; Leaflet is imported only in `ParkMap.tsx`; no SSR crash is introduced (the file is not yet used by the page).
@@ -872,7 +899,7 @@ Every phase's **Completion evidence** records: changed files; red-baseline comma
 - [x] Phase 3: `fetchParks` client call
 - [x] Phase 4: `useParksFetch` hook
 - [x] Phase 5: Map view helper
-- [ ] Phase 6: `ParkMap` component (Wave 1)
+- [x] Phase 6: `ParkMap` component (Wave 1)
 - [ ] Phase 7: `ParksContext` and `useParks` (Wave 1)
 - [ ] Phase 8: `useFocusOnSelect` (Wave 1)
 - [ ] Phase 9: Format helpers (Wave 1)
