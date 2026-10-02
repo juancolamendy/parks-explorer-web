@@ -31,7 +31,7 @@ Any material plan edit resets this approval to `Pending`. `cg-exec` must not sta
 ### Checkpoint Approvals
 | Checkpoint | Prerequisite phases | Status | Artifact revision | Evidence / approver |
 |---|---|---|---|---|
-| Checkpoint 4 | Phases 14–15 | Pending (awaiting human approval; Phases 14–15 complete 2026-10-02 18:02) | Plan branch at the Phase 15 commit | Results covered and reviewer items: see Part 1, Checkpoint Approvals (Checkpoint 4). |
+| Checkpoint 4 | Phases 14–15 | Approved (human, 2026-10-02; user also approved extending the Phase 18 TEST-055 guard) | Plan branch at the Phase 15 commit | Results covered and reviewer items: see Part 1, Checkpoint Approvals (Checkpoint 4). |
 | Final Checkpoint | Phases 16–18 | Pending | — | — |
 
 Phases 11, 12, and 13 are covered by Part 1's Checkpoint 2 (Phase 12, Wave 1) and Checkpoint 3 (Phases 11 and 13, Wave 2).
@@ -535,7 +535,7 @@ Phases 11, 12, and 13 are covered by Part 1's Checkpoint 2 (Phase 12, Wave 1) an
   **Tests:** TEST-052, TEST-053, TEST-054, TEST-055
   **Depends on:** TASK-006, TASK-015, TASK-017
 
-  **Outcome:** `npm test` fails when any `AC-*` has neither a test title carrying its ID nor a README checklist entry, when Leaflet is imported outside `ParkMap`, when a database or auth dependency appears, or when `geolocation` is used in source.
+  **Outcome:** `npm test` fails when any `AC-*` has neither a test title carrying its ID nor a README checklist entry, when Leaflet is imported outside `ParkMap`, when a database or auth dependency appears, when `geolocation` is used in source, or when `ParkExplorer.tsx` loses `ssr: false` on its `dynamic` ParkMap import or statically imports `@/components/ParkMap`.
 
   **Inputs:** `docs/requirement/requirements.md` AC ids; `src/**/*.test.*` titles; `README.md` checklist; `package.json`; SDD §10 boundaries.
   **Constraints:** Read files with `fs`; no new dependencies; helpers live inside the test files; the red baseline is a synthetic uncovered `AC-999` and a synthetic forbidden import that the helpers must flag.
@@ -554,7 +554,7 @@ Phases 11, 12, and 13 are covered by Part 1's Checkpoint 2 (Phase 12, Wave 1) an
   3. Run required checks and allocate `RESULT-*`.
 
   **Expected artifacts:** the two test files
-  **Expected LOC impact:** production +0; tests +90–130; docs/config +0; confidence: medium; basis: SDD §10 and the AC list; no repo analogue
+  **Expected LOC impact:** production +0; tests +105–150; docs/config +0; confidence: medium; basis: SDD §10 and the AC list; no repo analogue
   **Required checks:** red: `npm test -- src/traceability.test.ts src/repo-structure.test.ts` (exit 1); green: same, `npm test`, `npm run lint`, `npx tsc --noEmit`, `npm run build`
   **Policy evidence:** N/A — test-only. This phase is the CI-style traceability gate named in Part 1 (Testing Strategy), run locally with `npm test`.
   **Objective-evidence mapping:** AC-015(d) → structure and dependency checks → TEST-052 → Vitest report → RESULT-*; AC-007 → static code search → TEST-053; DES-023 → traceability → TEST-054; Leaflet boundary → TEST-055.
@@ -565,11 +565,11 @@ Phases 11, 12, and 13 are covered by Part 1's Checkpoint 2 (Phase 12, Wave 1) an
   | TEST-052 | AC-015 | integration | Secondary — static structure (`ParkList`, `ParkDetails`, `ParkMap` under `src/components`; OSM attribution; no database/auth dependency) is a distinct risk from runtime behavior | Repo files and `package.json` | Read and inspect | The three component files exist; `ParkMap.tsx` contains the OpenStreetMap attribution; no `prisma`, `mongoose`, `pg`, `mysql`, `sqlite`, `next-auth`, or similar in dependencies | Synthetic package list with `prisma` is flagged | Constraint drift (CON-003, CON-005) |
   | TEST-053 | AC-007 | integration | Secondary — static code search complements the runtime spy | Non-test files under `src/` | Search for `geolocation` | No occurrences | Synthetic source with `navigator.geolocation` is flagged | Hidden location use |
   | TEST-054 | n/a (DES-023 traceability gate) | integration | Secondary — protects the evidence chain | Requirements AC ids; test titles; README checklist | Compare sets | Every `AC-001`…`AC-015` appears in a test title or the README checklist | Synthetic `AC-999` reported uncovered | Lost coverage |
-  | TEST-055 | n/a (DES-019/SDD §10 boundary; supports AC-014) | integration | Secondary — SSR safety depends on Leaflet staying inside `ParkMap` | Imports across `src/` | Scan import lines | `leaflet` and `react-leaflet` imported only in `src/components/ParkMap.tsx` (and its tests) | Synthetic import in `lib/` is flagged | Server-render break |
+  | TEST-055 | n/a (DES-019/SDD §10 boundary; supports AC-014) | integration | Secondary — SSR safety depends on Leaflet staying inside `ParkMap` | Imports across `src/` | Scan import lines | `leaflet` and `react-leaflet` imported only in `src/components/ParkMap.tsx` (and its tests); `ParkExplorer.tsx` passes `ssr: false` to `dynamic` and has no static import of `@/components/ParkMap` (plan revision approved by the user 2026-10-02 after Phase 15 finding 4) | Synthetic import in `lib/`, synthetic `dynamic` without `ssr: false`, and synthetic static ParkMap import are each flagged | Server-render break |
 
   **Completion evidence:** per Phase evidence template (Part 1).
 
-**Expected authored LOC:** tests +90–130
+**Expected authored LOC:** tests +105–150
 **Success criteria:** 4 tests green; the full suite passes.
 **Commit message:** `test: add traceability and structure guards`
 **Git:** plan worktree.
@@ -583,8 +583,8 @@ Covered by Part 1: Phase 12 in Checkpoint 2 (Wave 1) and Phases 11 and 13 in Che
 - [x] `npm test` passes (RESULT-243: 15 files, 240 tests)
 - [x] End-to-end flow works for the core feature in tests: load, select by list and marker, focus handoff, failure paths (TEST-032 to TEST-041, TEST-056)
 - [x] R-003 and R-004 outcomes recorded
-- [ ] Review with human before proceeding
-- [ ] Record an Approved checkpoint gate (Checkpoint 4) before Phase 16
+- [x] Review with human before proceeding
+- [x] Record an Approved checkpoint gate (Checkpoint 4) before Phase 16
 
 ### Final Checkpoint (After Phases 16–18)
 - [ ] `npm test` passes, including `src/traceability.test.ts` and `src/repo-structure.test.ts`
