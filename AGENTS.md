@@ -7,7 +7,7 @@
 ### Commands
 - Install / development: `npm install` / `npm run dev`
 - Build: `npm run build`
-- Unit tests: N/A — no test runner configured yet
+- Unit tests: `npm test` (Vitest, single run; one file: `npm test -- <path>`)
 - Integration tests: N/A — no test runner configured yet
 - Types: N/A — no dedicated script; `npm run build` type-checks (`npx tsc --noEmit` also works)
 - Lint / formatting: `npm run lint` (ESLint); no formatter configured

@@ -203,7 +203,7 @@ Every phase's **Completion evidence** records: changed files; red-baseline comma
 **Size:** S
 **Files affected:** `package.json`, `vitest.config.ts`, `src/data/parks.sample.test.ts`, `AGENTS.md` (+ generated `package-lock.json`, excluded per A1)
 **Task:**
-- [ ] TASK-001 — Vitest harness
+- [x] TASK-001 — Vitest harness
 
   **Requirements:** CON-001, CON-004 (enabler for AC-001 to AC-015 evidence)
   **Design:** DES-023, DES-024
@@ -242,7 +242,23 @@ Every phase's **Completion evidence** records: changed files; red-baseline comma
   |---|---|---|---|---|---|---|---|---|
   | TEST-001 | n/a (DES-024 enabler) | unit | Secondary — proves tooling and alias for all ACs; no AC is asserted | `@/data/parks.sample.json` as committed | `npm test` | 12 records, all `id` unique, all `name` non-empty | Assertion fails if the alias does not resolve or the data changes | Alias resolution failure |
 
-  **Completion evidence:** per Phase evidence template.
+  **Completion evidence (2026-10-02, executed in the plan worktree on branch `plan/parks-explorer`):**
+  - Changed files: `package.json`, `vitest.config.ts`, `src/data/parks.sample.test.ts`, `AGENTS.md` (+ generated `package-lock.json`, excluded per A1).
+  - Red baseline: `npm test` → exit 1, `npm error Missing script: "test"` (the expected failure), recorded as RESULT-001.
+  - Green results:
+    - RESULT-002 — `npm test`, exit 0, TEST-001; 1 file / 1 test selected, 1 passed, 0 failed, 0 skipped.
+    - RESULT-003 — `npm run lint`, exit 0, no findings.
+    - RESULT-004 — `npx tsc --noEmit`, first run before any build: non-zero (exit code not captured in that run), `error TS2304: Cannot find name 'LayoutProps'` in `src/app/layout.tsx(20,50)`. Cause: `LayoutProps` is a Next-generated type under `.next/types`, absent in a fresh worktree until a build runs; not caused by this phase.
+    - RESULT-005 — `npx tsc --noEmit` re-run after the build generated `.next/types`: exit 0.
+    - RESULT-006 — `npm run build`, exit 0 after the `@types/node` bump (closes R-005); routes `/` and `/_not-found` built.
+    - RESULT-007 — `npm audit`, exit 0, 0 vulnerabilities.
+  - Installed: `vitest@5.0.3`, `@types/node@24.19.1` (`^24.19.1` in `package.json`; satisfies the plan's `^24`). `npm audit` after install: 0 vulnerabilities.
+  - Evidence anchors: `vitest.config.ts:5`, `package.json:10`, `AGENTS.md:10`, `src/data/parks.sample.test.ts:5`.
+  - Discovered decisions / follow-ups:
+    1. Vite prints a warning on every `npm test`: the `.ts` config uses ESM syntax in a CommonJS-loaded file (`"type": "module"` is absent from `package.json`). Tests are unaffected and the warning says the behavior changes in a future Vite major. Options: rename the file to `vitest.config.mts`, or set `"type": "module"`. Both depart from this plan's allowed paths, so no change was made; the owner decides (a rename also touches the "Do not change" lines of later phases).
+    2. `npx tsc --noEmit` only passes after `npm run build` (or a dev run) has generated `.next/types`. `AGENTS.md` still says `tsc` "also works"; a one-line clarification is a candidate follow-up for the owner.
+    3. `AGENTS.md` Planning says "more than 3 files → stop and break it up", while the approved plan allows phases of up to 4 files (Phases 1, 2, 16 have 4). The plan is the approved breakdown, so execution proceeded; the owner may want to align the rule (to "fewer than 5") for later runs.
+  - Remaining uncertainty: none for this phase's outcome.
 
 **Expected authored LOC:** production +15–25; tests +10–15; docs/config +8–14 (de-duplicated: 33–54)
 **Success criteria:** `npm test` exits 0 with 1 test passing; `npm run build` exits 0 after the `@types/node` bump.
@@ -746,7 +762,7 @@ Every phase's **Completion evidence** records: changed files; red-baseline comma
 | Needs coordination | None | No shared contract needs defining first (contracts are fixed in the SDD) |
 
 ## TODO List (ordered)
-- [ ] Phase 1: Test harness
+- [x] Phase 1: Test harness
 - [ ] Phase 2: Park model and `normalizeParks`
 - [ ] Phase 3: `fetchParks` client call
 - [ ] Phase 4: `useParksFetch` hook
