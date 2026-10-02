@@ -135,7 +135,7 @@ Any material plan edit resets this approval to `Pending`. `cg-exec` must not sta
 ### Checkpoint Approvals
 | Checkpoint | Prerequisite phases | Status | Artifact revision | Evidence / approver |
 |---|---|---|---|---|
-| Checkpoint 1 | Phases 1–3 | Pending | — | — |
+| Checkpoint 1 | Phases 1–3 | Pending | Part 1 as committed with the Phase 3 commit (see the commit hash in the cg-exec Phase 3 report) | Phases 1–3 complete. Results covered: RESULT-001 to RESULT-007 (Phase 1), RESULT-008 to RESULT-013 (Phase 2), RESULT-014 to RESULT-023 (Phase 3); latest full suite RESULT-020: 3 files, 65 tests passed; lint RESULT-021, tsc RESULT-022, build RESULT-023 all exit 0. Awaiting human approval before Phase 4. |
 | Checkpoint 2 | Phases 4–6 | Pending | — | — |
 | Checkpoint 3 | Phases 7–8 | Pending | — | — |
 | Checkpoint 4 | Phases 9–10 | Pending | — | — |
@@ -340,7 +340,7 @@ Every phase's **Completion evidence** records: changed files; red-baseline comma
 **Size:** S
 **Files affected:** `src/lib/api.ts`, `src/lib/api.test.ts`
 **Task:**
-- [ ] TASK-003 — `fetchParks`
+- [x] TASK-003 — `fetchParks`
 
   **Requirements:** REQ-F-009, AC-009
   **Design:** DES-017
@@ -378,7 +378,28 @@ Every phase's **Completion evidence** records: changed files; red-baseline comma
   | TEST-006 | AC-009 | resilience | Secondary — failure-class matrix at the call boundary; the Primary is the API test in Phase 12 | Stubbed `fetch` returning 200 + array, 500, 200 + invalid JSON, 200 + object, rejected promise | `fetchParks()` | Array returned for 200 + array; `cache: "no-store"` passed | Every other case throws | Non-2xx, bad body, network error |
   | TEST-007 | AC-009 | resilience | Secondary — timeout and abort are distinct failure modes | Fake timers; never-resolving `fetch`; caller `AbortSignal` | Advance 10 s; abort the caller signal | Throws after 10 s; throws on caller abort | No pending request left after timeout | Timeout, cancellation |
 
-  **Completion evidence:** per Phase evidence template.
+  **Completion evidence (2026-10-02, plan worktree, branch `plan/parks-explorer`):**
+  - Changed files: `src/lib/api.ts`, `src/lib/api.test.ts`.
+  - Red baseline — RESULT-014: `npm test -- src/lib/api.test.ts` → exit 1; suite failed to load, 0 tests ran: `Cannot find package '@/lib/api'` (the expected missing-module failure).
+  - Results:
+    - RESULT-015 — first implementation, `npm test -- src/lib/api.test.ts`: exit 1; 13 selected, 12 passed, 1 failed (TEST-007, "already-aborted signal": hung until Vitest's 5 s timeout). Cause in the implementation: it created the request first and then aborted it, so the mock never saw an abort event. Fixed in the implementation with an early `signal?.throwIfAborted()` (no request or timer is created); the test also gained assertions that `fetch` is not called and no timer is pending.
+    - RESULT-016 — after that fix, same command: exit 0; 13 passed.
+    - RESULT-017 — mutation check of the tests (implementation temporarily broken, then restored byte-identical), on 13 tests: M2 accept non-array body → 2 failed; M3 leave timer pending → 1 failed; M4 20 s timeout → 1 failed; M5 allow HTTP caching → 1 failed; M6 ignore caller abort → 2 failed; M7 leak response text → 1 failed; M8 no fail-fast on pre-aborted signal → 1 failed; **M1 ignore non-2xx → survived (13 passed)**: the 500/404 cases used non-JSON bodies, so `response.json()` rejected them for the wrong reason. A first attempt of this check was invalid (exit 127: the `timeout` command does not exist on this macOS shell, so no mutation ran) and was discarded and re-run.
+    - Test strengthened for the survivor: two non-2xx cases with valid array bodies (503 with `[]`, 404 with a non-empty array).
+    - RESULT-018 — final `npm test -- src/lib/api.test.ts`: exit 0; 15 selected, 15 passed, 0 failed, 0 skipped (TEST-006: 11 cases, TEST-007: 4).
+    - RESULT-019 — M1 re-run on the 15 tests: exit 1; 2 failed, so the survivor is now caught; implementation restored byte-identical.
+    - RESULT-020 — `npm test` (full suite): exit 0; 3 files, 65 tests, 65 passed, 0 failed, 0 skipped.
+    - RESULT-021 — `npm run lint`: exit 0.
+    - RESULT-022 — `npx tsc --noEmit`: exit 0.
+    - RESULT-023 — `npm run build`: exit 0 (run for Checkpoint 1 on the final `api.ts`; routes `/` and `/_not-found` built).
+  - Evidence anchors: `src/lib/api.ts:13` (`fetchParks`), `src/lib/api.ts:1` (`PARKS_ENDPOINT`), `src/lib/api.ts:2` (`FETCH_TIMEOUT_MS`), `src/lib/api.test.ts:31` (TEST-006).
+  - Actual authored LOC: production 29; tests 126 → phase total 155 vs plan 85–130: about 25 over the upper bound (more failure-class cases than estimated); under the 400-line phase limit.
+  - Discovered decisions / follow-ups:
+    1. Already-aborted caller signal fails fast with no request and no timer (stronger than the plan's "throws on caller abort").
+    2. `fetchParks` returns `unknown[]`; `useParksFetch` (Phase 4) is the one place that runs `normalizeParks` on it.
+    3. `AbortSignal.throwIfAborted()` and `signal.reason` need a modern browser (Chrome 100, Safari 15.4, Firefox 97 or newer); fine for this app, noted for the README's browser-support line.
+    4. The 10 s timeout rejects with the error "Request timed out" in browsers that honor the abort reason; older browsers reject with an `AbortError`. Phase 4 shows one generic message either way.
+  - Remaining uncertainty: none for this phase's outcome.
 
 **Expected authored LOC:** production +25–40; tests +60–90 (85–130)
 **Success criteria:** 2 tests green covering all six failure classes.
@@ -779,7 +800,7 @@ Every phase's **Completion evidence** records: changed files; red-baseline comma
 ## TODO List (ordered)
 - [x] Phase 1: Test harness
 - [x] Phase 2: Park model and `normalizeParks`
-- [ ] Phase 3: `fetchParks` client call
+- [x] Phase 3: `fetchParks` client call
 - [ ] Phase 4: `useParksFetch` hook
 - [ ] Phase 5: Map view helper
 - [ ] Phase 6: `ParkMap` component
