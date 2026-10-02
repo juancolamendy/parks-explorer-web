@@ -1,0 +1,23 @@
+# Auto-generated files
+.next/
+out/
+build/
+dist/
+*.tsbuildinfo
+next-env.d.ts
+
+# Secrets and environment
+.env
+.env.*
+*.pem
+*.key
+
+# Dependencies
+node_modules/
+
+# Large binary or media files
+*.jpg
+*.png
+*.gif
+*.mp4
+*.zip
