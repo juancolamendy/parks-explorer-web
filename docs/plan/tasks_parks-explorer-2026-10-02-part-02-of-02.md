@@ -32,7 +32,7 @@ Any material plan edit resets this approval to `Pending`. `cg-exec` must not sta
 | Checkpoint | Prerequisite phases | Status | Artifact revision | Evidence / approver |
 |---|---|---|---|---|
 | Checkpoint 4 | Phases 14–15 | Approved (human, 2026-10-02; user also approved extending the Phase 18 TEST-055 guard) | Plan branch at the Phase 15 commit | Results covered and reviewer items: see Part 1, Checkpoint Approvals (Checkpoint 4). |
-| Final Checkpoint | Phases 16–18 | Pending | — | — |
+| Final Checkpoint | Phases 16–18 | Pending (awaiting human approval; Phases 16–18 complete 2026-10-02) | Plan branch at the Phase 18 commit | Results covered: Phase 16 RESULT-250 to 256; Phase 17 RESULT-257 to 263; Phase 18 RESULT-264 to 273. Full suite RESULT-268: 19 files, 277 tests passed; lint RESULT-269, tsc RESULT-270, build RESULT-271, API contract RESULT-272, all exit 0. Open: owner's manual checklist TEST-044 to TEST-051 (README). |
 
 Phases 11, 12, and 13 are covered by Part 1's Checkpoint 2 (Phase 12, Wave 1) and Checkpoint 3 (Phases 11 and 13, Wave 2).
 
@@ -557,7 +557,7 @@ Phases 11, 12, and 13 are covered by Part 1's Checkpoint 2 (Phase 12, Wave 1) an
 **Size:** XS
 **Files affected:** `src/repo-structure.test.ts`, `src/traceability.test.ts`
 **Task:**
-- [ ] TASK-018 — Guard tests
+- [x] TASK-018 — Guard tests
 
   **Requirements:** REQ-F-010, REQ-NF-004, CON-002, CON-003, CON-005, AC-007, AC-015
   **Design:** DES-019, DES-023
@@ -597,7 +597,25 @@ Phases 11, 12, and 13 are covered by Part 1's Checkpoint 2 (Phase 12, Wave 1) an
   | TEST-054 | n/a (DES-023 traceability gate) | integration | Secondary — protects the evidence chain | Requirements AC ids; test titles; README checklist | Compare sets | Every `AC-001`…`AC-015` appears in a test title or the README checklist | Synthetic `AC-999` reported uncovered | Lost coverage |
   | TEST-055 | n/a (DES-019/SDD §10 boundary; supports AC-014) | integration | Secondary — SSR safety depends on Leaflet staying inside `ParkMap` | Imports across `src/` | Scan import lines | `leaflet` and `react-leaflet` imported only in `src/components/ParkMap.tsx` (and its tests); `ParkExplorer.tsx` passes `ssr: false` to `dynamic` and has no static import of `@/components/ParkMap` (plan revision approved by the user 2026-10-02 after Phase 15 finding 4) | Synthetic import in `lib/`, synthetic `dynamic` without `ssr: false`, and synthetic static ParkMap import are each flagged | Server-render break |
 
-  **Completion evidence:** per Phase evidence template (Part 1).
+  **Completion evidence (2026-10-02, plan worktree, branch `plan/parks-explorer`; sequential phase, results from RESULT-264):**
+  - Changed files: `src/repo-structure.test.ts` (CHG-030, new, 10 tests: TEST-052 ×4, TEST-053 ×2, TEST-055 ×4), `src/traceability.test.ts` (CHG-031, new, 5 tests: TEST-054). No non-test file changed.
+  - Plan revision applied (user-approved 2026-10-02): TEST-055 also requires `ParkExplorer.tsx` to pass `ssr: false` to `dynamic` and not statically import `@/components/ParkMap`.
+  - Red baseline — RESULT-264: the helpers live inside the test files, so a missing implementation cannot be simulated by deleting code; the red state is the synthetic negatives run against neutralized helpers (each helper made to report "nothing wrong"): `npm test -- src/traceability.test.ts src/repo-structure.test.ts` → exit 1; 15 tests, 7 failed (each synthetic negative: uncovered `AC-999`, `prisma`/`next-auth`, `navigator.geolocation`, synthetic Leaflet imports, `dynamic` without `ssr: false`, static ParkMap import), 8 passed (real-repo checks, which are green by design).
+  - Results:
+    - RESULT-265 — same command with the real helpers: exit 0; 15 selected, 15 passed, 0 failed, 0 skipped.
+    - RESULT-266 — `npx tsc --noEmit`: exit 2; `TS1501: This regular expression flag is only available when targeting 'es2018' or later` (the `s` flag). RESULT-267 — `npm run build`: exit 1, same error. Vitest does not type-check, so the tests had passed. Fixed by dropping the unneeded `s` flag (`[^}]` already spans lines).
+    - RESULT-268 — final `npm test`: exit 0; 19 files, 277 tests, 277 passed, 0 failed, 0 skipped.
+    - RESULT-269 — `npm run lint`: exit 0. RESULT-270 — `npx tsc --noEmit`: exit 0. RESULT-271 — `npm run build`: exit 0.
+    - RESULT-272 — `npm test -- src/app/api/parks/route.test.ts`: exit 0; 5 passed (cross-task API contract check required by the Final Checkpoint).
+    - RESULT-273 — mutation check against the real repository (each restored byte-identical; focused command exit 1 means caught): `ssr: true` in ParkExplorer → caught; extra static `import … "@/components/ParkMap"` → caught; `import "leaflet"` in `src/lib` → caught; `navigator.geolocation` in `src/lib` → caught; `prisma` added to dependencies → caught; OpenStreetMap attribution removed from ParkMap → caught; checklist row for AC-014 (its only verifier) removed → caught; the AC-012 checklist row removed → NOT flagged, correctly, because AC-012 also has test titles. No survivors that represent lost coverage. Note: my first run of these mutations passed the file list unquoted under zsh and produced exit 1 for every case including the unmutated control, so it was discarded and redone.
+  - Evidence anchors: `src/traceability.test.ts` (`definedAcs`, `acsInTestTitles`, `acsInChecklist`, `uncovered`), `src/repo-structure.test.ts` (`forbiddenDependencies`, `usesGeolocation`, `filesImportingLeaflet`, `mapLoadingProblems`).
+  - Actual authored LOC: tests about 175 (plan 105–150: about 25 over, from synthetic negatives for each guard); under the 400-line limit.
+  - Discovered decisions / follow-ups:
+    1. A guard is a regex over source text, so it proves the pattern is present, not that the map is lazily loaded; the manual production check TEST-047 stays.
+    2. An AC counts as covered when its id is in a test title (`[AC-nnn]` on a line with `[TEST-`) or a README checklist row. It does not check that the owner has run the manual rows.
+    3. The guards skip `src/traceability.test.ts` itself, so its synthetic ids do not count as coverage.
+    4. None other discovered.
+  - Remaining uncertainty: manual rows TEST-044 to TEST-051 are still "pending owner run".
 
 **Expected authored LOC:** tests +105–150
 **Success criteria:** 4 tests green; the full suite passes.
@@ -617,11 +635,11 @@ Covered by Part 1: Phase 12 in Checkpoint 2 (Wave 1) and Phases 11 and 13 in Che
 - [x] Record an Approved checkpoint gate (Checkpoint 4) before Phase 16
 
 ### Final Checkpoint (After Phases 16–18)
-- [ ] `npm test` passes, including `src/traceability.test.ts` and `src/repo-structure.test.ts`
-- [ ] `npm run lint`, `npx tsc --noEmit`, and `npm run build` exit 0
-- [ ] Cross-task contract and integration checks run and recorded as `RESULT-*` (command, exit status, artifact): `npm test` (full suite), `npm run build`, and `npm test -- src/app/api/parks/route.test.ts`
+- [x] `npm test` passes, including `src/traceability.test.ts` and `src/repo-structure.test.ts`
+- [x] `npm run lint`, `npx tsc --noEmit`, and `npm run build` exit 0
+- [x] Cross-task contract and integration checks run and recorded as `RESULT-*` (command, exit status, artifact): `npm test` (full suite), `npm run build`, and `npm test -- src/app/api/parks/route.test.ts`
 - [ ] Owner has run the README manual checklist (TEST-044 to TEST-051) and recorded pass/fail and date for each row
-- [ ] R-001 decision and R-007 acceptance recorded in the README
+- [x] R-001 decision and R-007 acceptance recorded in the README
 - [ ] Release prerequisites: none (local assessment); no unresolved integration risk remains
 - [ ] Ready for `cg-review`
 
@@ -641,4 +659,4 @@ Covered by Part 1: Phase 12 in Checkpoint 2 (Wave 1) and Phases 11 and 13 in Che
 - [x] Phase 15: Map wiring and focus handoff
 - [x] Phase 16: App shell: page, metadata, light theme
 - [x] Phase 17: README and manual verification checklist
-- [ ] Phase 18: Traceability and structure guard tests
+- [x] Phase 18: Traceability and structure guard tests
