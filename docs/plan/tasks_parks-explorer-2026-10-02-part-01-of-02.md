@@ -873,7 +873,7 @@ Every phase's **Completion evidence** records: changed files; red-baseline comma
 **Size:** S
 **Files affected:** `src/components/ParkList.tsx`, `src/components/ParkList.test.tsx`
 **Task:**
-- [ ] TASK-010 — `ParkList`
+- [x] TASK-010 — `ParkList`
 
   **Requirements:** REQ-F-001, REQ-NF-002, CON-003, AC-001, AC-005
   **Design:** DES-003, DES-020
@@ -911,7 +911,28 @@ Every phase's **Completion evidence** records: changed files; red-baseline comma
   | TEST-023 | AC-001 | integration | Secondary — list rendering and selection state; Primary is Phase 14 | 12 sample parks; `selectedParkId` null, then one id | Render; click an item | One button per park with its name; click calls `onSelect(id)`; selected has `aria-current="true"` and the cue class | No `aria-current` when nothing selected | Initial state |
   | TEST-024 | AC-005 | integration | Secondary — keyboard activation of list controls; Primary is Phase 15 | Rendered list; `user-event` | Tab to a button; Enter; Space on another | First Tab lands on a park button; Enter and Space each call `onSelect` with the focused park's id; `focus-visible:` ring classes present | No activation without a key press | Keyboard path |
 
-  **Completion evidence:** per Phase evidence template.
+  **Completion evidence (2026-10-02, Wave 2 worker, worktree `.worktree/parks-explorer-p10`, branch `plan/parks-explorer-p10`, base `178a6f5`):**
+  - Changed files: `src/components/ParkList.tsx`, `src/components/ParkList.test.tsx`.
+  - Docs consulted before coding (Step 2.5): Tailwind v4 docs (`wrap-break-word` is the v4.1+ overflow-wrap utility; `outline-<n>` defaults to a solid style); the installed Tailwind 4.3.3 was checked directly (RESULT-167).
+  - Red baseline — RESULT-160: `npm test -- src/components/ParkList.test.tsx` → exit 1; suite failed to load, 0 tests ran: `Failed to resolve import "@/components/ParkList"` (the expected missing-module failure).
+  - Results:
+    - RESULT-161 — `npm test -- src/components/ParkList.test.tsx`, exit 0, TEST-023 and TEST-024; 1 file, 14 selected, 14 passed, 0 failed, 0 skipped (TEST-023: 8, TEST-024: 6); no `act` or React warnings.
+    - RESULT-162 — `npm test` (full suite in this worktree): exit 0; 11 files, 170 tests, 170 passed, 0 failed, 0 skipped.
+    - RESULT-163 — `npm run lint`: exit 0.
+    - RESULT-164 — `npm run build`: exit 0 (routes `/`, `/_not-found`, `ƒ /api/parks`).
+    - RESULT-165 — `npx tsc --noEmit` (after the build created `.next/types`): exit 0.
+    - RESULT-166 — mutation check of the tests (implementation temporarily broken, then restored byte-identical): M1 every item `aria-current` → 3 failed; M2 `aria-current` never set → 1; M3 selection test inverted → 3; M4 click does nothing → 4; M5 `onSelect` receives the name → 4; M6 selected border cue removed → 1; M7 ring classes removed → 1; M8 wrapping class removed → 1; M9 nested scroll container added → 1; M10 heading renamed → 2; M11 order reversed → 4; M12 name injected as HTML → 1; every run exit 1, so all twelve are caught.
+    - RESULT-167 — Tailwind 4.3.3 class check (ad-hoc script using the `tailwindcss` `compile` API with the default theme loaded, not committed): `break-words`, `wrap-break-word`, `min-w-0`, `border-l-4`, `border-l-8`, `font-semibold`, `focus-visible:ring-2`, `focus-visible:ring-green-700`, `focus-visible:ring-offset-2`, `focus-visible:outline-hidden`, `border-green-700`, `bg-green-50`, `hover:bg-zinc-50` all generated; a made-up class was correctly not generated (a first run without the theme wrongly reported `min-w-0` and `font-semibold` as missing; the harness, not the classes, was at fault).
+  - Evidence anchors: `src/components/ParkList.tsx:24` (`ParkList`), `:9` (`ITEM_CLASS`), `:11` (`SELECTED_ITEM_CLASS`), `:37` (`aria-current`); `src/components/ParkList.test.tsx:33` (TEST-023 group), `:134` (TEST-024 group).
+  - Actual authored LOC: production 37; tests 141 → phase total 178 vs plan 100–140: about 38 over the upper bound (the extra cases are the empty list, unknown id, re-activation, Tab order, and the hostile-name test); under the 400-line phase limit.
+  - Discovered decisions / follow-ups:
+    1. `ParkList` is a default export (matching `ParkMap`) and has no `"use client"` directive: it uses no hooks and is only imported from the client `ParkExplorer`. The heading id is the constant `parks-list-heading` (one list per page). Phases 11 and 13 run in parallel and choose their own export style, so the integrator should confirm all components are default exports before Phase 14.
+    2. Additive to the plan's "focus-visible rings": items also carry `focus-visible:outline-hidden`. In Tailwind 4.3.3 this is `outline-style: none` normally and a transparent 2px outline in forced-colors mode (verified in RESULT-167), so a focus indicator survives high-contrast mode, where box-shadow rings are dropped.
+    3. The selected cue is a thicker left border (`border-l-8`) and bold text, plus a green tint; the tint is not the only signal (per F6). `aria-current="true"` carries the state for assistive technology.
+    4. An empty park list renders the heading and an empty `<ul>`. The distinct "No parks available." message belongs to `ParkExplorer` (Phases 14–15, AC-015).
+    5. jsdom cannot show a real focus ring, real text wrapping, or the page layout: TEST-023/TEST-024 assert the class contract only, and the real-browser checks stay with manual TEST-048 (focus ring) and TEST-045 (no clipping at 375 px).
+    6. A hostile-name test (DES-019) was added beyond the plan's rows: a name like `<img src=x onerror=...>` renders as text and creates no element.
+  - Remaining uncertainty: none for this phase's outcome.
 
 **Expected authored LOC:** production +40–55; tests +60–85 (100–140)
 **Success criteria:** 2 tests green.
@@ -960,6 +981,6 @@ Every phase's **Completion evidence** records: changed files; red-baseline comma
 - [x] Phase 7: `ParksContext` and `useParks` (Wave 1)
 - [x] Phase 8: `useFocusOnSelect` (Wave 1)
 - [x] Phase 9: Format helpers (Wave 1)
-- [ ] Phase 10: `ParkList` (Wave 2)
+- [x] Phase 10: `ParkList` (Wave 2)
 
 **Part 1 handoff:** this part does not complete the feature. Part 2 (`docs/plan/tasks_parks-explorer-2026-10-02-part-02-of-02.md`, Phases 11–18) shares the waves: its Phase 12 runs in Wave 1 and its Phases 11 and 13 in Wave 2; Phases 14–18 start after Checkpoint 3.
