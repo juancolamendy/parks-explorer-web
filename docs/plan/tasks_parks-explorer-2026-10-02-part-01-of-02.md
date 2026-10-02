@@ -123,12 +123,12 @@ Only what the SDD did not pin.
 ## Human Quality Gates
 
 ### Plan Approval
-- Status: **Pending** (reset 2026-10-02 17:31 by the parallel-waves patch; re-approval needed before any further phase starts)
+- Status: Approved (re-approved 2026-10-02 17:32 after the parallel-waves patch reset it at 17:31)
 - Required reviewers: Technical owner; product owner. Security owner not required (no auth, PII, secrets).
-- Artifact revision: to be recorded at re-approval (Part 1 and Part 2 content digests); built on SDD `725dded2aabe`, requirements `9de8b75c23bc`, analysis `47b4c2cbed5a`
+- Artifact revision: Part 1 content sha256 prefix `faecd6a198b8` and Part 2 content sha256 prefix `df87bcbe9335` (the patched revisions reviewed, committed at `655c770`, before this approval was recorded); built on SDD `725dded2aabe`, requirements `9de8b75c23bc`, analysis `47b4c2cbed5a`
 - Decision and conditions: Reset to Pending because the remaining plan changed: checkpoints regrouped around parallel waves, RESULT-ID ranges reserved, the parallelization tables corrected, and Part 2's prerequisite relaxed (see **Parallel execution protocol**). Phases 1–5, their evidence, and Checkpoint 1 are unaffected. **History (still in force, not reopened):** approved 2026-10-02 17:09 for Part 1 `df832e549b04` and Part 2 `07271dbf4394`, with decisions **R-001** (user agrees with the `react-leaflet` Hippocratic-2.1 licence), **R-004** (`vitest-axe` 0.1.0 accepted, `axe-core` fallback), **R-006** (lockfile excluded from the 5-file count).
-- Evidence: Previous approval: user reply "Approve the plan." Re-approval: pending.
-- Approved by / at: — (previous approval: user, 2026-10-02 17:09)
+- Evidence: Previous approval: user reply "Approve the plan." (17:09). Re-approval: user chose "Approve and start Wave 1" in answer to the explicit re-approval question (17:32), no conditions.
+- Approved by / at: User (technical and product owner), 2026-10-02 17:32 (re-approval); 2026-10-02 17:09 (original)
 
 Any material plan edit resets this approval to `Pending`. `cg-exec` must not start Phase 1 until this gate is approved for the current revision.
 

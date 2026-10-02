@@ -19,12 +19,12 @@ Composes the Part 1 building blocks into the working app: `ParkDetails` with ima
 ## Human Quality Gates
 
 ### Plan Approval
-- Status: **Pending** (reset 2026-10-02 17:31 by the parallel-waves patch; re-approval is recorded once, in Part 1's Plan Approval gate, and covers both parts)
+- Status: Approved (re-approved 2026-10-02 17:32; recorded once in Part 1's Plan Approval gate, which covers both parts)
 - Required reviewers: Technical owner; product owner. Security owner not required.
-- Artifact revision: to be recorded at re-approval; built on SDD `725dded2aabe`, requirements `9de8b75c23bc`, analysis `47b4c2cbed5a`
-- Decision and conditions: Reset to Pending by the same patch (see Part 1). History: approved 2026-10-02 17:09 for Part 2 `07271dbf4394` together with Part 1 `df832e549b04`.
-- Evidence: Previous approval: user reply "Approve the plan." Re-approval: pending.
-- Approved by / at: — (previous approval: user, 2026-10-02 17:09)
+- Artifact revision: Part 2 content sha256 prefix `df87bcbe9335` together with Part 1 `faecd6a198b8` (committed at `655c770`, reviewed before this approval was recorded); built on SDD `725dded2aabe`, requirements `9de8b75c23bc`, analysis `47b4c2cbed5a`
+- Decision and conditions: Approved, no conditions. History: reset to Pending at 17:31 by the parallel-waves patch; originally approved 2026-10-02 17:09 for Part 2 `07271dbf4394` together with Part 1 `df832e549b04`.
+- Evidence: User chose "Approve and start Wave 1" in answer to the explicit re-approval question (17:32).
+- Approved by / at: User (technical and product owner), 2026-10-02 17:32
 
 Any material plan edit resets this approval to `Pending`. `cg-exec` must not start a Part 2 phase until its `Depends on` tasks are complete, the start condition of its wave in Part 1's Parallel execution protocol is met, and this gate is approved for the current revision.
 
