@@ -55,7 +55,7 @@ Phases 11, 12, and 13 are covered by Part 1's Checkpoint 2 (Phase 12, Wave 1) an
 **Size:** M
 **Files affected:** `src/components/ParkDetails.tsx`, `src/components/ParkImage.tsx`, `src/components/ParkDetails.test.tsx`
 **Task:**
-- [ ] TASK-011 — `ParkDetails` panel with per-image fallback
+- [x] TASK-011 — `ParkDetails` panel with per-image fallback
 
   **Requirements:** REQ-F-002, REQ-F-003, REQ-F-012, REQ-F-013, CON-003, AC-004, AC-011
   **Design:** DES-004, DES-019, DES-029
@@ -97,7 +97,28 @@ Phases 11, 12, and 13 are covered by Part 1's Checkpoint 2 (Phase 12, Wave 1) an
   | TEST-027 | AC-004 | resilience | Secondary — image failure and image safety are distinct risks | A park with 2 image URLs | Fire `error` on the first `<img>` | First image replaced by "Image could not be loaded" in the same-size box; second image unaffected; images carry `loading="lazy"` and `referrerPolicy="no-referrer"` | No broken-image icon; no layout-size change class removed | Image load failure |
   | TEST-028 | n/a (DES-004 prompt and focus target) | integration | Secondary — prompt and heading contract used by AC-001/AC-005 | `park` undefined; a `headingRef` | Render | Heading "Park details" with `tabIndex=-1` attached to the ref; prompt "Select a park from the list or map to see its details" | No park fields shown | Nothing selected |
 
-  **Completion evidence:** per Phase evidence template (Part 1).
+  **Completion evidence (2026-10-02, Wave 2 worker, worktree `.worktree/parks-explorer-p11`, branch `plan/parks-explorer-p11`, base `178a6f5`, reserved range RESULT-180 to 199):**
+  - Changed files: `src/components/ParkDetails.tsx`, `src/components/ParkImage.tsx`, `src/components/ParkDetails.test.tsx`.
+  - Docs consulted before coding (Step 2.5): React reference — a function component accepts `ref` as an ordinary prop (no `forwardRef`), and `onError` is a standard element event; `next/image` was not used (DES-029).
+  - Red baseline — RESULT-180: `npm test -- src/components/ParkDetails.test.tsx` → exit 1; suite failed to load, 0 tests ran: `Failed to resolve import "@/components/ParkDetails"` (the expected missing-module failure).
+  - Results:
+    - RESULT-181 — first implementation, same command: exit 0; 19 selected, 19 passed.
+    - RESULT-182 — after adding a test for repeated amenities and image URLs (written first): exit 1; 20 selected, 19 passed, 1 failed with React's "two children with the same key" warning. Real defect in the implementation: the data is untrusted and `normalizeParks` does not dedupe amenities or image URLs, so equal values produced equal keys. Fixed in the implementation with position-qualified keys.
+    - RESULT-183 — after the fix, `npm test -- src/components/ParkDetails.test.tsx`: exit 0; 1 file, 20 selected, 20 passed, 0 failed, 0 skipped (TEST-025: 4, TEST-026: 9, TEST-027: 4, TEST-028: 3); no React or `act` warnings (the only "warning" line in the output is Vite's known config notice).
+    - RESULT-184 — `npm test` (full suite in this worktree): exit 0; 11 files, 176 tests, 176 passed, 0 failed, 0 skipped.
+    - RESULT-185 — `npm run lint`: exit 0, no findings (the one deliberate `eslint-disable-next-line @next/next/no-img-element` carries its DES-029 reason).
+    - RESULT-186 — `npm run build`: exit 0 (routes `/`, `/_not-found`, `ƒ /api/parks`).
+    - RESULT-187 — `npx tsc --noEmit` (after the build created `.next/types`): exit 0.
+    - RESULT-188 — mutation check of the tests (implementation temporarily broken, then both files restored byte-identical): M1 hours not verbatim → 1 failed; M2 wrong address label → 2; M3 "/5" appended to the rating → 8; M4 heading not focusable → 1; M5 heading ref not attached → 1; M6 raw amenity slugs → 4; M7 missing acreage shown as a number → 1; M8 wrong empty heading → 2; M9 wrong prompt → 1; M10 region not labelled by its heading → 1; M11 alt position off by one → 2; M12 no fallback on image error → 2; M13 referrer sent → 1; M14 images not lazy → 1; M15 box loses the fixed aspect ratio → 1; M16 duplicate keys again → 1; every run exit 1, so all sixteen are caught.
+  - Evidence anchors: `src/components/ParkDetails.tsx:88` (`ParkDetails`), `src/components/ParkDetails.tsx:31` (`ParkFacts`), `src/components/ParkDetails.tsx:20` (`Field`), `src/components/ParkImage.tsx:17` (`ParkImage`), `src/components/ParkDetails.test.tsx:56`, `:127`, `:209`, `:231`, `:292` (test groups).
+  - Actual authored LOC: production 115 (ParkDetails 87 + ParkImage 28); tests 232 → phase total 347 vs plan 205–300: about 47 over the upper bound (the "only text from the record or a label" check and the repeated-value and hostile-text cases were added); under the 400-line phase limit.
+  - Discovered decisions / follow-ups:
+    1. Labels not pinned by the plan (assumption A8 extended): "Hours not provided" and "Acreage not provided" join the other labels; the amenity label list drops entries that format to nothing, and shows "No amenities listed" when none remain.
+    2. Layout: Address, Hours, and Description use a `<dl>`; acreage and rating are self-labelling lines (`formatAcreage`, `formatRating`) so no label repeats its own value; amenities are a labelled list, photos a two-column grid from the `sm` breakpoint. The heading carries a visible `focus-visible` outline, since it receives programmatic focus (visible focus is verified manually, TEST-048).
+    3. `ParkImage` is a client component (it holds the failure state); `ParkDetails` has no `"use client"` directive because it holds no state and is only rendered from the client explorer.
+    4. A test now asserts that every text node in the panel comes from the park record or a fixed label, which guards REQ-F-003 (nothing fabricated) beyond the plan's per-field checks.
+    5. Phase 14 should pass `headingRef` from the explorer; the prompt text and heading are exported only through the component (no shared constants), so tests elsewhere should match the strings as written in the plan.
+  - Remaining uncertainty: none for this phase's outcome.
 
 **Expected authored LOC:** production +85–120; tests +120–180 (205–300)
 **Success criteria:** 4 tests green; the details panel for each of the 3 sparse sample parks renders with only supplied facts.
@@ -519,7 +540,7 @@ Covered by Part 1: Phase 12 in Checkpoint 2 (Wave 1) and Phases 11 and 13 in Che
 | Needs coordination | Shared evidence files, RESULT-ID ranges, merge order | See Part 1, Parallel execution protocol |
 
 ## TODO List (ordered)
-- [ ] Phase 11: Park details panel (Wave 2)
+- [x] Phase 11: Park details panel (Wave 2)
 - [x] Phase 12: `GET /api/parks` route (Wave 1)
 - [ ] Phase 13: `ExplorerLayout` (Wave 2)
 - [ ] Phase 14: `ParkExplorer` data states
