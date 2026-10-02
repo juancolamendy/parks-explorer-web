@@ -40,6 +40,10 @@ Out of scope by requirement: search, filters, rating sort, geolocation, database
 - The dataset's image host `images.example.com` does not resolve, so every park image shows the "Image could not be loaded" fallback until real image URLs are supplied.
 - `npm test` prints a Vite warning that `vitest.config.ts` is loaded as an ES module (rename to `.mts` or set `"type": "module"` to silence it).
 - Retrying after a failed load does not clear the current selection (open question).
+- `npm run lint` also scans git worktrees kept inside the repo (`.worktree/`) and reports thousands of unrelated errors while any exist. Use `npx eslint src`, or remove the worktrees. Fix: add `.worktree/**` to the ESLint ignores.
+- If a selected park were missing after a reload, the details panel would show the prompt with nothing highlighted. The sample data is static, so this cannot happen today.
+- Image URLs starting with `http:` are accepted; on an HTTPS site the browser blocks them and the fallback shows.
+- The details panel names its amenities list twice for screen readers (heading plus list label).
 - Jsdom tests cannot check CSS layout, colour contrast, the real focus ring or the production `ssr: false` behaviour; those are in the manual checklist below.
 
 ## Verification
@@ -55,6 +59,8 @@ npm run build
 
 ### Manual end-to-end checklist
 
+A code review of revision `ddb038a` found no blockers (see `docs/reviews/review_parks-explorer-2026-10-02.md`). It rated the acceptance criteria AC-002, AC-006, AC-013 and AC-014 as not yet proven, because their only Primary checks are the manual rows below and they have not been run.
+
 Run on `npm run dev` or `npm run build && npm start`, at 375 px and 1280 px wide. The owner accepts that AC-002, AC-006, AC-013 and AC-014 are verified only by these manual runs (risk R-007). Fill in the last three columns as you go.
 
 | Test | AC | Check | Owner | Result | Date |
@@ -68,10 +74,15 @@ Run on `npm run dev` or `npm run build && npm start`, at 375 px and 1280 px wide
 | TEST-050 | AC-009 | Block `/api/parks`, reload, then unblock and click Retry. An alert with Retry shows, then the parks load. | pending owner run | pending | — |
 | TEST-051 | AC-012 | Select a park from the list and from a marker. The details heading is inside the viewport and the marker is visibly selected. | pending owner run | pending | — |
 
+## Time spent
+
+About 2 hours in total, as reported by the owner.
+
 ## Before public use
 
 - **Map tiles.** This local assessment uses OpenStreetMap's standard tiles so no API key is needed. A public deployment needs a reviewed tile provider and a usage plan that respects the OpenStreetMap tile usage policy.
 - Replace the placeholder image URLs with real, reviewed images.
 - Confirm the `react-leaflet` Hippocratic-2.1 licence is acceptable for the deployment, or move to Leaflet directly.
-- Run the manual checklist and record the results.
+- Run the manual checklist and record the results (the review's open Major finding).
+- Accept only `https:` image URLs, and decide whether Retry should clear the selection.
 - Add monitoring, a content security policy and a real data source behind `/api/parks`.

@@ -23,6 +23,7 @@ const REQUIRED_HEADINGS = [
   "Omissions",
   "Known issues",
   "Verification",
+  "Time spent",
   "Before public use",
 ];
 
