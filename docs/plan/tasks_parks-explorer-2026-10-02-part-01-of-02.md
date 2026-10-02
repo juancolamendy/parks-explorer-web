@@ -739,7 +739,7 @@ Every phase's **Completion evidence** records: changed files; red-baseline comma
 **Size:** XS
 **Files affected:** `src/lib/format.ts`, `src/lib/format.test.ts`
 **Task:**
-- [ ] TASK-009 — Format helpers
+- [x] TASK-009 — Format helpers
 
   **Requirements:** REQ-F-012, AC-004, AC-011
   **Design:** DES-004, DES-030 (§9.4)
@@ -777,7 +777,26 @@ Every phase's **Completion evidence** records: changed files; red-baseline comma
   | TEST-021 | AC-011 | unit | Secondary — formatter table; Primary is Phase 11 | Slugs `dog-run`, `wifi`, `kayak-launch`, `a--b`, `-`; acreage 526; rating 4.7 and 0 | Call each helper | "Dog run", "Wifi", "Kayak launch", "A b", dropped; "526 acres"; "Rating: 4.7", "Rating: 0" | No "/5", no extra words | Odd slugs |
   | TEST-022 | AC-004 | unit | Secondary — missing values; Primary is Phase 11 | rating `null` and `undefined`; empty name for alt | Call helpers | "Rating not provided"; alt "Photo 2 of Prospect Park" | No fabricated value | Null values |
 
-  **Completion evidence:** per Phase evidence template.
+  **Completion evidence (2026-10-02, Wave 1 worker in `.worktree/parks-explorer-p9`, branch `plan/parks-explorer-p9`, base `53035ad`):**
+  - Changed files: `src/lib/format.ts`, `src/lib/format.test.ts`.
+  - Docs note (Step 2.5): pure string formatting; no framework API is used, so no documentation fetch was needed.
+  - Red baseline — RESULT-110: `npm test -- src/lib/format.test.ts` → exit 1; suite failed to load, 0 tests ran: `Cannot find package '@/lib/format'` (the expected missing-module failure).
+  - Results:
+    - RESULT-111 — `npm test -- src/lib/format.test.ts`, exit 0, TEST-021 and TEST-022; 1 file, 26 selected, 26 passed, 0 failed, 0 skipped (TEST-021: 20 cases, TEST-022: 6).
+    - RESULT-112 — `npm test` (full suite in this worktree): exit 0; 6 files, 110 tests, 110 passed, 0 failed, 0 skipped.
+    - RESULT-113 — `npm run lint`: exit 0.
+    - RESULT-114 — `npm run build`: exit 0 (run so `.next/types` exists for `tsc`).
+    - RESULT-115 — `npx tsc --noEmit`: exit 0.
+    - RESULT-116 — mutation check of the tests (implementation temporarily broken, then restored byte-identical): M1 no capitalising → 7 failed; M2 hyphens kept in the label → 6 failed; M3 empty labels not dropped → 5 failed; M4 rest of label lowercased → 1 failed; M5 wrong acreage unit → 4 failed; M6 rating 0 treated as missing → 1 failed; M7 a "/ 5" scale added → 3 failed; M8 NaN rating accepted → 2 failed; M9 blank name kept in alt text → 2 failed; every run exit 1, so all nine are caught.
+  - Evidence anchors: `src/lib/format.ts:11` (`formatAmenity`), `:22` (`formatAcreage`), `:30` (`formatRating`), `:37` (`imageAlt`); `src/lib/format.test.ts:10` (TEST-021 group), `:91` (TEST-022 group).
+  - Actual authored LOC: production 21; tests 88 → phase total 109 vs plan 70–100: about 9 over the upper bound (tests larger than estimated because of the odd-slug and non-finite-rating tables); under the 400-line phase limit.
+  - Discovered decisions / follow-ups:
+    1. `formatAmenity` returns `string | null`, with `null` meaning "label would be empty, drop it", so Phase 11 can use `flatMap`; the plan named the helper but not its return type.
+    2. `imageAlt(name, position)` takes a 1-based position (so the second image is `imageAlt(name, 2)` → "Photo 2 of Prospect Park"); a blank name gives "Photo {n}" and never an invented name.
+    3. `formatRating` also treats `NaN` and `Infinity` as "not provided" (defensive; `normalizeParks` already yields only finite numbers or `null`).
+    4. `formatAcreage` takes a number only; the null case ("Acreage not provided", assumption A8) belongs to `ParkDetails` in Phase 11.
+    5. Only the first character is uppercased and the rest is kept as supplied (`BBQ-pit` → "BBQ pit"), per SDD §9.4.
+  - Remaining uncertainty: none for this phase's outcome.
 
 **Expected authored LOC:** production +25–35; tests +45–65 (70–100)
 **Success criteria:** 2 tests green.
@@ -875,7 +894,7 @@ Every phase's **Completion evidence** records: changed files; red-baseline comma
 - [ ] Phase 6: `ParkMap` component (Wave 1)
 - [ ] Phase 7: `ParksContext` and `useParks` (Wave 1)
 - [ ] Phase 8: `useFocusOnSelect` (Wave 1)
-- [ ] Phase 9: Format helpers (Wave 1)
+- [x] Phase 9: Format helpers (Wave 1)
 - [ ] Phase 10: `ParkList` (Wave 2)
 
 **Part 1 handoff:** this part does not complete the feature. Part 2 (`docs/plan/tasks_parks-explorer-2026-10-02-part-02-of-02.md`, Phases 11–18) shares the waves: its Phase 12 runs in Wave 1 and its Phases 11 and 13 in Wave 2; Phases 14–18 start after Checkpoint 3.
