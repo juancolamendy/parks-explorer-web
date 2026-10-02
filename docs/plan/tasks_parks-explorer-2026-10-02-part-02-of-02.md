@@ -31,7 +31,7 @@ Any material plan edit resets this approval to `Pending`. `cg-exec` must not sta
 ### Checkpoint Approvals
 | Checkpoint | Prerequisite phases | Status | Artifact revision | Evidence / approver |
 |---|---|---|---|---|
-| Checkpoint 4 | Phases 14–15 | Pending | — | — |
+| Checkpoint 4 | Phases 14–15 | Pending (awaiting human approval; Phases 14–15 complete 2026-10-02 18:02) | Plan branch at the Phase 15 commit | Results covered and reviewer items: see Part 1, Checkpoint Approvals (Checkpoint 4). |
 | Final Checkpoint | Phases 16–18 | Pending | — | — |
 
 Phases 11, 12, and 13 are covered by Part 1's Checkpoint 2 (Phase 12, Wave 1) and Checkpoint 3 (Phases 11 and 13, Wave 2).
@@ -334,9 +334,10 @@ Phases 11, 12, and 13 are covered by Part 1's Checkpoint 2 (Phase 12, Wave 1) an
 ### Phase 15 — Map wiring and focus handoff
 **Goal:** The map joins the explorer client-side only, selection syncs everywhere, and focus moves to the details heading.
 **Size:** S
-**Files affected:** `package.json`, `src/components/ParkExplorer.tsx`, `src/components/ParkExplorer.interaction.test.tsx` (+ generated lockfile)
+**Files affected:** `package.json`, `src/components/ParkExplorer.tsx`, `src/components/ParkExplorer.interaction.test.tsx`, `src/components/ParkExplorer.test.tsx` (setup-only stub of the map; see the plan revision below) (+ generated lockfile)
+**Plan revision (2026-10-02 17:58, confirmed by the user):** wiring the map into `ParkExplorer` makes every marker a button named after its park, so Phase 14's unscoped `getByRole("button", { name })` queries became ambiguous (12 failures: "Found multiple elements with the role button"). The user chose to keep Phase 14's tests focused on the data states by stubbing the client-only map there. This adds `src/components/ParkExplorer.test.tsx` to this phase's allowed changes for **one `vi.mock("next/dynamic", …)` stub only**: no assertion is added, removed, or changed. The phase stays at 4 files (limit: fewer than 5).
 **Task:**
-- [ ] TASK-015 — Map wiring and focus handoff
+- [x] TASK-015 — Map wiring and focus handoff
 
   **Requirements:** REQ-F-004, REQ-F-005, REQ-F-006, REQ-F-007, REQ-F-010, REQ-NF-002, REQ-NF-003, REQ-NF-004, AC-003, AC-005, AC-007, AC-008, AC-012, AC-013, AC-015
   **Design:** DES-001, DES-005, DES-009, DES-012, DES-013, DES-018, DES-020
@@ -355,8 +356,9 @@ Phases 11, 12, and 13 are covered by Part 1's Checkpoint 2 (Phase 12, Wave 1) an
   - `package.json`
   - `src/components/ParkExplorer.tsx`
   - `src/components/ParkExplorer.interaction.test.tsx`
+  - `src/components/ParkExplorer.test.tsx` (only a `vi.mock("next/dynamic", …)` map stub with its comment; see the plan revision above)
 
-  **Do not change:** `src/components/ParkMap.tsx`, hooks, lib files, and the Phase 14 tests' assertions.
+  **Do not change:** `src/components/ParkMap.tsx`, hooks, lib files, and the Phase 14 tests' assertions (the stub is the only permitted edit to that file).
 
   **Implementation steps:**
   1. Install `vitest-axe` (or fall back per R-004), write TEST-036 to TEST-041 and TEST-056, confirm red.
@@ -381,7 +383,31 @@ Phases 11, 12, and 13 are covered by Part 1's Checkpoint 2 (Phase 12, Wave 1) an
   | TEST-041 | AC-013 | integration | Secondary — structural accessibility (names, roles, ARIA) is automatable; contrast and real axe are manual (Phase 17) | Initial state and selected state | `axe` with the `color-contrast` rule disabled; check every button's accessible name | Zero violations in both states; no control without a name | No unnamed control | jsdom limits |
   | TEST-056 | AC-003 | integration | Primary | Sample plus a clone with `location` removed and one with `lat: "x"` | Render; select the clone | Clones listed and selectable with details; marker count equals the number of valid-coordinate parks | No marker for either clone | Invalid coordinates |
 
-  **Completion evidence:** per Phase evidence template (Part 1), plus the R-003/R-004 outcomes.
+  **Completion evidence (2026-10-02, plan worktree, branch `plan/parks-explorer`; sequential phase, results from RESULT-237):**
+  - Changed files: `package.json` (+ generated `package-lock.json`, excluded per A1), `src/components/ParkExplorer.tsx` (modified), `src/components/ParkExplorer.interaction.test.tsx` (new), `src/components/ParkExplorer.test.tsx` (setup-only map stub, see the plan revision above).
+  - Dependency (R-004 outcome): `vitest-axe@0.1.0` installed; `npm audit` 0 vulnerabilities. Its peer range (`vitest >=0.16`) covers Vitest 5, its `axe`/`configureAxe` work, but its `toHaveNoViolations` matcher types do not fit Vitest 5's `Assertion` type (TS2339), so tests assert on `results.violations` directly. Transitive `axe-core@4.13.0` is licensed MPL-2.0 (dev-only, not shipped); the wrapper's last release was 2025-01-22.
+  - Docs consulted (Step 2.5): Next.js `next/dynamic` (`ssr: false` only in a Client Component; the `loading` option), the `vitest-axe` README (installed copy; no docs in context7), and the installed ParkMap and useFocusOnSelect sources.
+  - Red baseline — RESULT-237: `npm test -- src/components/ParkExplorer.interaction.test.tsx` → exit 1; 19 tests, 13 failed (no map region, no focus handoff), 6 passed. The 6 that passed guard behavior that already existed: no focus change on load, the empty-data message, the geolocation check on the Retry path, and the two axe scans (which ran before any map existed).
+  - Results:
+    - RESULT-238 — after wiring the map and the focus hook, same file: exit 0; 19 passed.
+    - RESULT-239 — `npm test` (full suite): exit 1; 15 files, 238 tests, 12 failed, all in `ParkExplorer.test.tsx` (Phase 14): `Found multiple elements with the role "button"`, because each map marker is a button named after its park. Resolved by the user-confirmed plan revision: a setup-only `vi.mock("next/dynamic", …)` stub in that file (diff: 6 added lines, 0 removed, no assertion touched).
+    - RESULT-240 — `npm run build`: exit 1; `TS2339: Property 'toHaveNoViolations' does not exist on type 'Assertion<void, AxeResults>'` (the project type-checks test files; Vitest does not). RESULT-241 — `npx tsc --noEmit`: exit 2, same error. Resolved by asserting `results.violations` toEqual `[]`.
+    - RESULT-242 — final `npm test -- src/components/ParkExplorer.interaction.test.tsx`: exit 0; 21 selected, 21 passed, 0 failed, 0 skipped (TEST-036: 3, TEST-037: 2, TEST-038: 2, TEST-039: 3, TEST-040: 7, TEST-041: 3, TEST-056: 1).
+    - RESULT-243 — `npm test` (full suite): exit 0; 15 files, 240 tests, 240 passed, 0 failed, 0 skipped; no React or `act` warnings.
+    - RESULT-244 — `npm run lint`: exit 0. RESULT-245 — `npm run build`: exit 0 (routes `/`, `/_not-found`, `ƒ /api/parks`). RESULT-246 — `npx tsc --noEmit`: exit 0. RESULT-247 — `npm audit`: exit 0, 0 vulnerabilities.
+    - RESULT-248 — mutation check of `ParkExplorer.tsx` against both explorer test files (component temporarily broken, then restored byte-identical): M1 no focus handoff → 5 failed; M2 map never rendered → 11 failed; M3 map gets no selection → 2 failed; M4 marker selection does nothing → 4 failed; M5 an unnamed button in the page → 3 failed (so the axe scans do catch real violations); M6 reads `navigator.geolocation` → 2 failed; M8 map mounted for empty data → 2 failed; M10 heading ref not attached → 5 failed. **M7 (map mounted while loading) and M9 (map mounted on failure) survived** (41 passed): nothing asserted that the map stays out until the data is ready (SDD DES-026). Two tests were added (loading, and failure then Retry with all 12 markers), and both mutations are now caught (1 failed each, 43 tests). The first attempt at M7 to M9 was invalid (a shell quoting error stopped the mutation from applying) and was discarded and redone with a script.
+    - RESULT-249 — build-level mutations (the one thing jsdom cannot prove): B1 removing `ssr: false` → `npm run build` exit 0; B2 replacing the dynamic import with a static `import ParkMap` → `npm run build` exit 0. Both survive; see follow-up 4.
+  - Evidence anchors: `src/components/ParkExplorer.tsx:33` (`dynamic` `ParkMap`), `:43` (`ExplorerContent`), `:49` (`useFocusOnSelect(headingRef, focusRequest)`), `:20` (`MapPlaceholder`); `package.json:35` (`vitest-axe`).
+  - Actual authored LOC: production about 40 (79 lines in the file, 62 before this phase); tests 284 (interaction file) + 1 (stub); config +3 → phase total about 328 vs plan 192–304: about 24 over the upper bound (21 tests including two added after mutation survivors); under the 400-line phase limit.
+  - Discovered decisions / follow-ups:
+    1. **Plan revision (user-confirmed):** Phase 15 edited Phase 14's test file with a setup-only map stub (above). No assertion changed.
+    2. **R-004 outcome:** `vitest-axe` is usable through `axe`/`configureAxe`, but not its matcher/types under Vitest 5. Using `axe-core` directly would be an equivalent, smaller alternative; no change made.
+    3. **Dependency note:** `vitest-axe` pulls `axe-core` under MPL-2.0 (a file-level licence, dev-only, nothing shipped) and has not been released since 2025-01-22; the owner should be aware (the plan's dependency table listed only the wrapper's MIT licence).
+    4. **Client-only map is protected by two layers that the build cannot tell apart.** The map is rendered only after the client-side fetch completes, so the server render (the loading state) never includes it, and Leaflet 1.9.4 can be imported on a server without crashing. Therefore neither removing `ssr: false` nor a static import breaks `npm run build`, and no automated test guards `ssr: false` or the code-split chunk (DES-018, REQ-NF-004). Recommendation for Phase 18: extend the TEST-055 guard to also require that `ParkExplorer.tsx` passes `ssr: false` to `dynamic` and has no static import of `@/components/ParkMap`; the manual production check TEST-047 stays. Not done here, because it is outside this phase's allowed files and the Phase 18 plan text would need the change.
+    5. `next/dynamic` is mocked in jsdom (as the plan says), so the real chunk loading, the `loading` placeholder, and `ssr: false` are not exercised by unit tests; they rely on the build and the manual checks.
+    6. The axe scans exclude `color-contrast` (jsdom has no layout); contrast and the real focus ring stay with manual TEST-046 and TEST-048.
+    7. The Phase 7 retry-selection question is unchanged and still open.
+  - Remaining uncertainty: none for this phase's outcome beyond follow-up 4.
 
 **Expected authored LOC:** production +40–70; tests +150–230; config +2–4 (192–304)
 **Success criteria:** 7 tests green; `npm run build` still exits 0 (checked again in Phase 16 with the page wired).
@@ -554,9 +580,9 @@ Phases 11, 12, and 13 are covered by Part 1's Checkpoint 2 (Phase 12, Wave 1) an
 Covered by Part 1: Phase 12 in Checkpoint 2 (Wave 1) and Phases 11 and 13 in Checkpoint 3 (Wave 2). The `npm run build` check that proves the `/api/parks` route compiles is part of the Wave 1 verification (RESULT-150 to 159).
 
 ### Checkpoint 4: After Phases 14–15
-- [ ] `npm test` passes
-- [ ] End-to-end flow works for the core feature in tests: load, select by list and marker, focus handoff, failure paths
-- [ ] R-003 and R-004 outcomes recorded
+- [x] `npm test` passes (RESULT-243: 15 files, 240 tests)
+- [x] End-to-end flow works for the core feature in tests: load, select by list and marker, focus handoff, failure paths (TEST-032 to TEST-041, TEST-056)
+- [x] R-003 and R-004 outcomes recorded
 - [ ] Review with human before proceeding
 - [ ] Record an Approved checkpoint gate (Checkpoint 4) before Phase 16
 
@@ -582,7 +608,7 @@ Covered by Part 1: Phase 12 in Checkpoint 2 (Wave 1) and Phases 11 and 13 in Che
 - [x] Phase 12: `GET /api/parks` route (Wave 1)
 - [x] Phase 13: `ExplorerLayout` (Wave 2)
 - [x] Phase 14: `ParkExplorer` data states
-- [ ] Phase 15: Map wiring and focus handoff
+- [x] Phase 15: Map wiring and focus handoff
 - [ ] Phase 16: App shell: page, metadata, light theme
 - [ ] Phase 17: README and manual verification checklist
 - [ ] Phase 18: Traceability and structure guard tests

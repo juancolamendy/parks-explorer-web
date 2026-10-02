@@ -14,6 +14,12 @@ import { makeRawPark } from "@/lib/fixtures/makePark";
 // The real hook, context, and components run; only the network call is mocked.
 vi.mock(import("@/lib/api"), () => ({ fetchParks: vi.fn() }));
 
+// These tests are about the data states (list, details, loading, failure, empty) only. The
+// client-only map has its own tests (ParkMap.test.tsx and ParkExplorer.interaction.test.tsx), and
+// its markers are buttons named after each park, which would make the list queries below
+// ambiguous, so the map is stubbed out here.
+vi.mock("next/dynamic", () => ({ default: () => () => null }));
+
 const fetchParksMock = vi.mocked(fetchParks);
 const PROMPT = "Select a park from the list or map to see its details";
 
