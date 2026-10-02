@@ -109,7 +109,7 @@ Phases 11, 12, and 13 are covered by Part 1's Checkpoint 2 (Phase 12, Wave 1) an
 **Size:** XS
 **Files affected:** `src/app/api/parks/route.ts`, `src/app/api/parks/route.test.ts`
 **Task:**
-- [ ] TASK-012 — Parks route handler
+- [x] TASK-012 — Parks route handler
 
   **Requirements:** REQ-F-008, CON-004, CON-005, AC-009
   **Design:** DES-006, DES-016
@@ -147,7 +147,24 @@ Phases 11, 12, and 13 are covered by Part 1's Checkpoint 2 (Phase 12, Wave 1) an
   | TEST-029 | AC-009 | integration | Primary | Sample file read from disk with `fs` | Call exported `GET()` | Status 200; `content-type` contains `application/json`; parsed body deep-equals the parsed file | Body is not filtered or reshaped (12 records, same field set) | Body fidelity |
   | TEST-030 | n/a (DES-016 method surface) | integration | Secondary — guards against accidental mutation endpoints (CON-005) | Route module import | Inspect exports | `GET` exported | No `POST`, `PUT`, `PATCH`, `DELETE` exports | Extra methods |
 
-  **Completion evidence:** per Phase evidence template (Part 1).
+  **Completion evidence (2026-10-02, Wave 1 worker, worktree `.worktree/parks-explorer-p12`, branch `plan/parks-explorer-p12`, base `53035ad`; RESULT range 130–149):**
+  - Changed files: `src/app/api/parks/route.ts`, `src/app/api/parks/route.test.ts`.
+  - Docs consulted before coding (Step 2.5): Next.js 16.2 Route Handler `GET` returning `Response.json(...)` (and the non-async `export function GET` form used in the redirect example), with a static JSON import.
+  - Red baseline — RESULT-130: `npm test -- src/app/api/parks/route.test.ts` → exit 1; suite failed to load, 0 tests ran: `Cannot find package '@/app/api/parks/route'` (the expected missing-module failure).
+  - Results:
+    - RESULT-131 — `npm test -- src/app/api/parks/route.test.ts`, exit 0, TEST-029 and TEST-030; 1 file, 5 selected, 5 passed, 0 failed, 0 skipped (TEST-029: 4, TEST-030: 1).
+    - RESULT-132 — `npm run build`, exit 0; the route table lists `ƒ /api/parks` (alongside `○ /` and `○ /_not-found`).
+    - RESULT-133 — `npm test` (full suite on this branch): exit 0; 6 files, 89 tests, 89 passed, 0 failed, 0 skipped.
+    - RESULT-134 — `npm run lint`: exit 0.
+    - RESULT-135 — `npx tsc --noEmit` (after the build generated `.next/types`): exit 0.
+    - RESULT-136 — mutation check of the tests (route temporarily broken, then restored byte-identical): M1 drop a record → 2 failed; M2 wrap the body in an object → 2 failed; M3 status 201 → 1 failed; M4 plain-text content type → 1 failed; M5 add a `POST` export → 1 failed; M6 strip the `rating` field from every record → 2 failed; every run exit 1, so all six are caught.
+  - Evidence anchors: `src/app/api/parks/route.ts:11` (`GET`), `src/app/api/parks/route.test.ts:17` (TEST-029), `src/app/api/parks/route.test.ts:63` (TEST-030 group).
+  - Actual authored LOC: production 4; tests 45 → phase total 49 vs plan 26–40: about 9 over the upper bound (four TEST-029 cases instead of one); under the 400-line phase limit.
+  - Discovered decisions / follow-ups:
+    1. `next build` reports the route as **dynamic** (`ƒ`, server-rendered on demand) even though the data is a static import. This matches the plan's "framework defaults, no explicit cache headers"; no change made. If the README's "known issues / next steps" should mention caching or static export, that is a Phase 17 decision.
+    2. TEST-029 gained two cases beyond the plan's single row: a fresh `Response` object on every call, and an explicit "records are not filtered or reshaped" check (12 records, identical key sets).
+    3. Only `GET` is exported; the `405` for other methods is Next.js framework behavior and is not exercised by a running server in this phase (the test asserts the export surface only).
+  - Remaining uncertainty: item 3, the 405 behavior at runtime, is not exercised; it can be spot-checked in the manual checklist (README, Phase 17) with `curl -X POST`.
 
 **Expected authored LOC:** production +6–10; tests +20–30 (26–40)
 **Success criteria:** 2 tests green; `npm run build` lists `/api/parks`.
@@ -503,7 +520,7 @@ Covered by Part 1: Phase 12 in Checkpoint 2 (Wave 1) and Phases 11 and 13 in Che
 
 ## TODO List (ordered)
 - [ ] Phase 11: Park details panel (Wave 2)
-- [ ] Phase 12: `GET /api/parks` route (Wave 1)
+- [x] Phase 12: `GET /api/parks` route (Wave 1)
 - [ ] Phase 13: `ExplorerLayout` (Wave 2)
 - [ ] Phase 14: `ParkExplorer` data states
 - [ ] Phase 15: Map wiring and focus handoff
