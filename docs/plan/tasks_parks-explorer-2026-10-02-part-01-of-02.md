@@ -270,7 +270,7 @@ Every phase's **Completion evidence** records: changed files; red-baseline comma
 **Size:** M
 **Files affected:** `src/lib/types.ts`, `src/lib/parks.ts`, `src/lib/fixtures/makePark.ts`, `src/lib/parks.test.ts`
 **Task:**
-- [ ] TASK-002 — Park type and normalization
+- [x] TASK-002 — Park type and normalization
 
   **Requirements:** REQ-F-001, REQ-F-003, REQ-F-005, REQ-F-012, CON-004, AC-003, AC-004, AC-015
   **Design:** DES-002, DES-014, DES-019, DES-030 (§9.1)
@@ -313,7 +313,22 @@ Every phase's **Completion evidence** records: changed files; red-baseline comma
   | TEST-004 | AC-004 | unit | Secondary — field coercion; the Primary is Phase 11 | Clones of `old-mill-botanical-garden`, `highland-dog-park`, `cedar-hill-nature-preserve` plus non-string amenities | `normalizeParks` | `description`/`address`/`rating` become `null`; empty arrays preserved; non-string or empty amenities dropped; negative acreage → `null` | No invented values | Null/absent fields |
   | TEST-005 | n/a (DES-019, untrusted data) | unit | Secondary — security control with no AC | Images `javascript:alert(1)`, `data:text/html,x`, `/relative.jpg`, `ftp://x`, valid `https://` | `normalizeParks` | Only absolute `http(s)` URLs kept | Disallowed schemes never reach `images` | Unsafe URL schemes |
 
-  **Completion evidence:** per Phase evidence template.
+  **Completion evidence (2026-10-02, plan worktree, branch `plan/parks-explorer`):**
+  - Changed files: `src/lib/types.ts`, `src/lib/parks.ts`, `src/lib/fixtures/makePark.ts`, `src/lib/parks.test.ts`.
+  - Red baseline — RESULT-008: `npm test -- src/lib/parks.test.ts` → exit 1; suite failed to load, 0 tests ran: `Cannot find package '@/lib/fixtures/makePark'` (the expected missing-module failure).
+  - Green results:
+    - RESULT-009 — `npm test -- src/lib/parks.test.ts`, exit 0, TEST-002 to TEST-005; 1 file, 49 cases selected, 49 passed, 0 failed, 0 skipped (TEST-002: 21 cases, TEST-003: 18, TEST-004: 9, TEST-005: 1; the four IDs expand into 49 table-driven cases).
+    - RESULT-010 — `npm test` (full suite), exit 0; 2 files, 50 tests, 50 passed, 0 failed, 0 skipped.
+    - RESULT-011 — `npm run lint`, exit 0, no findings.
+    - RESULT-012 — `npx tsc --noEmit`, exit 0.
+    - RESULT-013 — mutation check of the tests (implementation temporarily broken, then restored byte-identical): M1 allow all URL schemes → 1 failed; M2 drop duplicate-id guard → 1 failed; M3 widen latitude bound → 2 failed; M4 trim verbatim text → 44 failed; each run exit 1, so each bug is caught.
+  - Evidence anchors: `src/lib/types.ts:1` (`Coordinates`), `src/lib/types.ts:7` (`Park`), `src/lib/parks.ts:89` (`normalizeParks`), `src/lib/parks.ts:103` (`getMarkerParks`), `src/lib/fixtures/makePark.ts:8` (`makeRawPark`), `src/lib/parks.test.ts:28` (TEST-002).
+  - Actual authored LOC: production 99 (types 16 + parks 83); fixture 11; tests 213 → phase total 323 vs plan 190–280 (upper bound 310): about 13 over the upper bound because the table-driven tests came out larger than estimated; still under the 400-line phase limit.
+  - Discovered decisions / follow-ups:
+    1. Implementation choices the SDD left open: an unusable record (e.g. empty `name`) does not reserve its `id`, so a later valid record with the same `id` is listed; `description`, `address`, and `hours` keep their original text (only `id` and `name` are trimmed); amenity entries are kept verbatim; image URLs are kept exactly as supplied (an uppercase scheme such as `HTTPS://` is accepted and left unchanged).
+    2. `hasValidCoordinates` is internal (`toCoordinates`); only `normalizeParks` and `getMarkerParks` are exported, as CHG-006 lists.
+    3. The fixture uses `structuredClone`. It works in the node test environment used so far; confirm it also exists under the jsdom environment when jsdom arrives in Phase 4 (unverified until then).
+  - Remaining uncertainty: item 3 only.
 
 **Expected authored LOC:** production +80–120; tests +110–160 (fixture included): 190–280, upper bound 310 with fixture margin
 **Success criteria:** 4 tests green; `normalizeParks(sample)` returns 12 parks and `getMarkerParks` returns 12.
@@ -763,7 +778,7 @@ Every phase's **Completion evidence** records: changed files; red-baseline comma
 
 ## TODO List (ordered)
 - [x] Phase 1: Test harness
-- [ ] Phase 2: Park model and `normalizeParks`
+- [x] Phase 2: Park model and `normalizeParks`
 - [ ] Phase 3: `fetchParks` client call
 - [ ] Phase 4: `useParksFetch` hook
 - [ ] Phase 5: Map view helper
