@@ -665,7 +665,7 @@ Every phase's **Completion evidence** records: changed files; red-baseline comma
 **Size:** S
 **Files affected:** `src/contexts/ParksContext.tsx`, `src/hooks/useParks.ts`, `src/contexts/ParksContext.test.tsx`
 **Task:**
-- [ ] TASK-007 — `ParksContext`
+- [x] TASK-007 — `ParksContext`
 
   **Requirements:** REQ-F-001, REQ-F-007, AC-001, AC-012
   **Design:** DES-007, DES-012, DES-015
@@ -704,7 +704,27 @@ Every phase's **Completion evidence** records: changed files; red-baseline comma
   | TEST-017 | AC-001 | integration | Secondary — state rules at provider level; Primary is Phase 14 | Provider with mocked `useParksFetch` returning 12 parks | `selectPark("prospect-park")`, again, then an unknown id | Initially `selectedParkId` null and `focusRequest` 0; selection sets id; `focusRequest` increments on every call including repeats; unknown id gives `selectedPark` undefined | No selection before any call | Re-selection, unknown id |
   | TEST-018 | n/a (DES-007 guard) | unit | Secondary — misuse and render-stability guard | `useParks` outside a provider; re-render without state change | Render hook | Throws a descriptive error outside provider; context value identity is stable across unrelated re-renders | No silent `undefined` context | Missing provider |
 
-  **Completion evidence:** per Phase evidence template.
+  **Completion evidence (2026-10-02, Wave 1 worker, worktree `.worktree/parks-explorer-p7`, branch `plan/parks-explorer-p7`, RESULT range 070–089):**
+  - Changed files: `src/contexts/ParksContext.tsx`, `src/hooks/useParks.ts`, `src/contexts/ParksContext.test.tsx`. No dependency or lockfile change.
+  - Docs consulted before coding (Step 2.5): React 19 `createContext` (`<SomeContext value>` can be rendered directly as the provider; `createContext(null)` plus a guard for a missing provider); Next.js 16 "Server and Client Components > Context providers" (context and provider live in a `"use client"` file).
+  - Red baseline — RESULT-070: `npm test -- src/contexts/ParksContext.test.tsx` → exit 1; suite failed to load, 0 tests ran: `Failed to resolve import "@/hooks/useParks"` (the expected missing-module failure).
+  - Results:
+    - RESULT-071 — `npm test -- src/contexts/ParksContext.test.tsx`, exit 0, TEST-017 and TEST-018; 1 file, 9 selected, 9 passed, 0 failed, 0 skipped (TEST-017: 6, TEST-018: 3); no React warnings.
+    - RESULT-072 — mutation check of the tests (implementation temporarily broken, then restored byte-identical): M1 focus request only on a different id → 1 failed; M2 start with a selection → 1 failed; M3 no memoization of the context value → 1 failed; M4 `selectPark` recreated every render → 2 failed; M5 `useParks` returns the null context silently → 1 failed; M6 `selectedPark` always undefined → 2 failed; M7 `retry` not passed through → 1 failed; every run exit 1, so all seven are caught.
+    - RESULT-073 — first full-checks run: `npm test` exit 0 (6 files, 93 tests); `npm run lint` exit 0; **`npm run build` exit 1 and `npx tsc --noEmit` exit 2**: `src/contexts/ParksContext.test.tsx(14,4): error TS2769` — the `vi.mock` factory supplied `FETCH_ERROR_MESSAGE: string`, but that export is literal-typed (Vitest does not type-check, so the tests had passed). Fixed by removing the unused property from the factory; behavior assertions unchanged, so RESULT-072 still applies.
+    - RESULT-074 — after the fix, `npm test -- src/contexts/ParksContext.test.tsx`: exit 0; 9 passed.
+    - RESULT-075 — `npm test` (full suite): exit 0; 6 files, 93 tests, 93 passed, 0 failed, 0 skipped (branch baseline was 84).
+    - RESULT-076 — `npm run lint`: exit 0.
+    - RESULT-077 — `npm run build`: exit 0.
+    - RESULT-078 — `npx tsc --noEmit` (after the build generated `.next/types`): exit 0.
+  - Evidence anchors: `src/contexts/ParksContext.tsx:13` (`ParksContextValue`), `:29` (`ParksContext`), `:39` (`ParksProvider`); `src/hooks/useParks.ts:5` (`useParks`); `src/contexts/ParksContext.test.tsx:43` (TEST-017 group), `:131` (TEST-018 group).
+  - Actual authored LOC: production 59 (context 50, hook 9); tests 106 → phase total 165, inside the plan's 120–170.
+  - Discovered decisions / follow-ups:
+    1. `selectedParkId` and `focusRequest` live in one `useState` object (`Selection`), so one `selectPark` call updates both atomically; `selectPark` and the memoized context value are stable across unrelated re-renders (TEST-018).
+    2. `retry` does not clear the selection: the selected id survives a failed load and its park reappears if the retry succeeds with the same data. If a retry should clear the selection, that is a one-line decision for the owner; the plan and SDD are silent.
+    3. `ParksContext.tsx` carries `"use client"` (docs-confirmed); `useParks.ts` does not need it because only client components import it.
+    4. `npx tsc --noEmit` and `npm run build` type-check test files that Vitest does not; later phases should run `tsc` (not only `npm test`) before claiming green. This caught the mock-factory type error here.
+  - Remaining uncertainty: none for this phase's outcome.
 
 **Expected authored LOC:** production +50–70; tests +70–100 (120–170)
 **Success criteria:** 2 tests green.
@@ -900,7 +920,7 @@ Every phase's **Completion evidence** records: changed files; red-baseline comma
 - [x] Phase 4: `useParksFetch` hook
 - [x] Phase 5: Map view helper
 - [x] Phase 6: `ParkMap` component (Wave 1)
-- [ ] Phase 7: `ParksContext` and `useParks` (Wave 1)
+- [x] Phase 7: `ParksContext` and `useParks` (Wave 1)
 - [ ] Phase 8: `useFocusOnSelect` (Wave 1)
 - [ ] Phase 9: Format helpers (Wave 1)
 - [ ] Phase 10: `ParkList` (Wave 2)
