@@ -197,7 +197,7 @@ Phases 11, 12, and 13 are covered by Part 1's Checkpoint 2 (Phase 12, Wave 1) an
 **Size:** XS
 **Files affected:** `src/layouts/ExplorerLayout.tsx`, `src/layouts/ExplorerLayout.test.tsx`
 **Task:**
-- [ ] TASK-013 — `ExplorerLayout`
+- [x] TASK-013 — `ExplorerLayout`
 
   **Requirements:** REQ-NF-001, REQ-NF-002, AC-006, AC-013
   **Design:** DES-010, DES-020, DES-027
@@ -234,7 +234,27 @@ Phases 11, 12, and 13 are covered by Part 1's Checkpoint 2 (Phase 12, Wave 1) an
   |---|---|---|---|---|---|---|---|---|
   | TEST-031 | AC-006 | integration | Secondary — guards the DOM-order and `lg:` class contract (F2) between manual runs; the SDD lists no automated check for AC-006, so this is additive and changes no requirement | Three labelled slot stubs | Render `ExplorerLayout` | One `<main>`; exactly one `<h1>`; slot order in the DOM is list, map, details; root grid has the `lg:` two-column classes with list left and map above details on the right | No reordering classes that break DOM order; no nested `overflow-y-auto` container | Focus-order regression |
 
-  **Completion evidence:** per Phase evidence template (Part 1).
+  **Completion evidence (2026-10-02, Wave 2 worker, worktree `.worktree/parks-explorer-p13`, branch `plan/parks-explorer-p13`, base `178a6f5`; RESULT range 200–219):**
+  - Changed files: `src/layouts/ExplorerLayout.tsx`, `src/layouts/ExplorerLayout.test.tsx`.
+  - Docs consulted before coding (Step 2.5): Tailwind v4 docs for arbitrary values (underscores become spaces, e.g. `grid-cols-[1fr_500px_2fr]`), `lg:` responsive variants, and that Tailwind detects only complete class-name strings in source files.
+  - Red baseline — RESULT-200: `npm test -- src/layouts/ExplorerLayout.test.tsx` → exit 1; suite failed to load, 0 tests ran: `Failed to resolve import "@/layouts/ExplorerLayout"` (the expected missing-module failure).
+  - Results:
+    - RESULT-201 — `npm test -- src/layouts/ExplorerLayout.test.tsx`, exit 0, TEST-031; 1 file, 7 selected, 7 passed, 0 failed, 0 skipped.
+    - RESULT-202 — `npm test` (full suite in this worktree): exit 0; 11 files, 163 tests, 163 passed, 0 failed, 0 skipped (156 baseline + 7).
+    - RESULT-203 — `npm run lint`: exit 0.
+    - RESULT-204 — `npm run build`: exit 0 (routes `/`, `/_not-found`, `ƒ /api/parks`; this also generated `.next/types`).
+    - RESULT-205 — `npx tsc --noEmit` (after the build): exit 0.
+    - RESULT-206 — generated-CSS check on the build output: the built stylesheet contains every layout class (`lg:row-span-2`, `lg:col-start-1`, `lg:col-start-2`, `lg:row-start-1`, `lg:row-start-2`, `lg:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)]`, `lg:grid-rows-[auto_1fr]`, `lg:items-start`, `min-w-0`, `grid-cols-1`, `max-w-7xl`), and the `lg` breakpoint is `min-width:64rem` (1024 px), matching DES-027. Tailwind picked the classes up from the layout file even though no page imports it yet.
+    - RESULT-207 — mutation check of the tests (implementation temporarily broken, then restored byte-identical): M1 details before map in the DOM → 1 failed; M2 `lg:order-first` on details → 1 failed; M3 list no longer spans two rows → 1 failed; M4 `overflow-y-auto` around the list → 1 failed; M5 h1 becomes h2 → 1 failed; M6 `<main>` becomes `<div>` → 2 failed; M7 details in the wrong column → 1 failed; M8 map slot loses `min-w-0` → 1 failed; M9 row template removed → 1 failed; M10 a second h1 → 1 failed; every run exit 1, so all ten are caught.
+  - Evidence anchors: `src/layouts/ExplorerLayout.tsx:22` (`ExplorerLayout`), `src/layouts/ExplorerLayout.test.tsx:38`, `:65`, `:116` (the three test groups for TEST-031).
+  - Actual authored LOC: production 18; tests 88 → phase total 106 vs plan 75–110: inside the estimate.
+  - Discovered decisions / follow-ups:
+    1. The grid uses `lg:grid-rows-[auto_1fr]` and `lg:items-start`, so extra list height is absorbed by the details row and never opens a gap under the map; the test pins `lg:grid-rows-[auto_1fr]` as part of the class contract.
+    2. The component has no `"use client"` directive (it has no hooks or state), so it stays a Server Component when imported from a server file and becomes part of the client bundle when imported by the client `ParkExplorer` (Phase 14).
+    3. Exported as a named export `ExplorerLayout` (not default); Phase 14 should import it by name.
+    4. This is a jsdom DOM-order and class contract only. Real stacking at 375 px, the two-column arrangement at 1280 px, and absence of horizontal scroll still need the manual AC-006 check (TEST-045) in Phase 17.
+    5. Outside this phase's allowed files and left untouched: `AGENTS.md` still says "Integration tests: N/A — no test runner configured yet", which has been stale since Phase 4.
+  - Remaining uncertainty: none for this phase's outcome.
 
 **Expected authored LOC:** production +35–50; tests +40–60 (75–110)
 **Success criteria:** 1 test green.
@@ -542,7 +562,7 @@ Covered by Part 1: Phase 12 in Checkpoint 2 (Wave 1) and Phases 11 and 13 in Che
 ## TODO List (ordered)
 - [x] Phase 11: Park details panel (Wave 2)
 - [x] Phase 12: `GET /api/parks` route (Wave 1)
-- [ ] Phase 13: `ExplorerLayout` (Wave 2)
+- [x] Phase 13: `ExplorerLayout` (Wave 2)
 - [ ] Phase 14: `ParkExplorer` data states
 - [ ] Phase 15: Map wiring and focus handoff
 - [ ] Phase 16: App shell: page, metadata, light theme
