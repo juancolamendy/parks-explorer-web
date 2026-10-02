@@ -62,11 +62,11 @@ flowchart LR
 ### 2.2 Components and file placement
 | Folder | Contents |
 |---|---|
-| `src/app/` | `page.tsx` (renders `ParkExplorer`), `layout.tsx`, `globals.css`, `api/parks/route.ts` (DES-006). Required by Next.js routing. |
+| `src/app/` | `page.tsx` (renders `ParkExplorer`), `layout.tsx` (scaffold "Create Next App" title and description replaced with real metadata), `globals.css`, `api/parks/route.ts` (DES-006). Required by Next.js routing. |
 | `src/components/` | `ParkExplorer` (DES-001), `ParkList` (DES-003), `ParkDetails` + `ParkImage` (DES-004), `ParkMap` (DES-005). |
 | `src/contexts/` | `ParksContext.tsx` (DES-007): provider holding `parks`, `status`, `selectedParkId`, `selectPark`, `retry`. The single source of truth. |
-| `src/hooks/` | `useParks` (context accessor with guard), `useParksFetch` (DES-008: fetch, 10 s timeout, retry), `useFocusOnSelect` (DES-009: focus and scroll on selection change, never on mount). |
-| `src/layouts/` | `ExplorerLayout.tsx` (DES-010): responsive shell, stacked below `lg` and two columns at `lg` and above, taking list, map, and details as slots. |
+| `src/hooks/` | `useParks` (context accessor with guard), `useParksFetch` (DES-008: fetch, 10 s timeout, retry; aborts on cleanup and ignores any response that is not from the latest request, so React StrictMode double-effects, Retry, and unmount cannot apply stale data), `useFocusOnSelect` (DES-009: focus and scroll on selection change, never on mount; feature-checks `scrollIntoView` and `matchMedia` before use). |
+| `src/layouts/` | `ExplorerLayout.tsx` (DES-010): responsive shell taking list, map, and details as slots in DOM order list → map → details. Stacked below `lg`; at `lg` and above, two columns: list on the left, map above details on the right, so tab order equals visual order. Also owns the page landmarks (see DES-020). |
 | `src/lib/` | DES-002: `types.ts`, `parks.ts` (`normalizeParks`, `hasValidCoordinates`, `getMarkerParks`), `format.ts` (amenity, acres, rating strings), `api.ts` (`fetchParks`), `fixtures/` (test fixture builder). All DOM-free. |
 | `src/data/` | `parks.sample.json` (exists; never edited). |
 | `src/assets/` | Only the image-fallback icon (SVG), if one is needed. Empty otherwise. |
@@ -116,7 +116,7 @@ sequenceDiagram
     end
 ```
 
-An empty result after normalization is `ready` with zero parks and shows a distinct "no parks available" message (AC-015a).
+An empty result after normalization is `ready` with zero parks and shows a distinct "no parks available" message (AC-015a). While loading, a `role="status"` "Loading parks…" message is shown; the error view uses `role="alert"`. `useParksFetch` aborts the in-flight request on cleanup and ignores responses from superseded requests.
 
 ### 3.2 DES-012 Selecting a park (list or marker)
 
@@ -158,7 +158,7 @@ The API and sample file carry the **raw** shape (top-level array, 12 records tod
 | `coordinates` | `{ lat: number; lng: number } \| null` | Non-null only if both are finite numbers, lat in [-90, 90], lng in [-180, 180] (Q-003). Markers are exactly the parks where it is non-null. |
 | `amenities` | `string[]` | Non-array → `[]`; non-string or empty entries dropped. |
 | `hours` | `string \| null` | Same text rule; shown verbatim. |
-| `images` | `string[]` | Non-array → `[]`; only `http:` and `https:` URLs kept. |
+| `images` | `string[]` | Non-array → `[]`; only absolute `http:` and `https:` URLs kept (relative URLs and other schemes are dropped). |
 | `acreage` | `number \| null` | Finite and ≥ 0, else `null`. |
 | `rating` | `number \| null` | Finite number, else `null`. |
 
@@ -205,14 +205,14 @@ Checklist items this app does not need are marked N/A with a reason.
 
 | Area | Design decision |
 |---|---|
-| **Performance** (DES-018) | No latency or throughput target in the requirements, so none is invented. Practical budget: 12 records, 5.9 KB payload, no pagination (fixed small dataset; the README lists this as a limit). `ParkMap` is code-split via `dynamic`, so the list renders without loading Leaflet. Images use `loading="lazy"`. Load, stress, and soak tests: N/A. |
+| **Performance** (DES-018) | No latency or throughput target in the requirements, so none is invented. Practical budget: 12 records, 5.9 KB payload, no pagination (fixed small dataset; the README lists this as a limit). `ParkMap` is code-split via `dynamic`, so the list renders without loading Leaflet. Images use `loading="lazy"`. The context value and callbacks are memoized, and the two marker icons (default, selected) are created once at module level, so a selection change does not rebuild every marker. Load, stress, and soak tests: N/A. |
 | **Security** (DES-019) | No auth, PII, secrets, or user input. Controls: image URLs limited to `http(s)` (DES-014); React text rendering only, never `dangerouslySetInnerHTML`; `referrerPolicy="no-referrer"` on images; static JSON import, so no path traversal. New runtime and dev dependencies need review approval per `AGENTS.md`. CSP, CORS, HSTS, rate limiting: N/A locally, listed in the README as pre-public work. |
 | **Consistency** | N/A: read-only static data, one client state owner (DES-007). Re-activating the selected park still refocuses the details (DES-012). |
 | **Availability** | No SLO invented. Degradation ladder (DES-013): tiles fail → list and details work; API fails → error plus Retry; image fails → fallback block. Multi-region, failover, backups: N/A. |
 | **Scalability / Cost** | N/A for 12 records and zero infrastructure. OSM public tiles are free but unsuitable for public traffic (RISK-002); the README requires a reviewed provider plan before public use. |
 | **Reliability** | Every failure class maps to one UI state (DES-013). 10 s fetch timeout (DES-017). Edge cases (empty data, 0 or 1 marker, bad or duplicate records, long text) are handled by DES-014 and AC-015; long strings wrap (`break-words`, `min-w-0`) to prevent horizontal scroll. Retries, circuit breakers, dead-letter queues: N/A. |
-| **Observability** (DES-022) | No metrics, tracing, or alerting. A single `console.error` in the fetch-failure path only. |
-| **Accessibility and layout** (DES-020) | List items are `<button>`s in a `<ul>`, `aria-current` on the selected one. Details region labelled, heading focusable (`tabindex="-1"`). `focus-visible:` rings on controls. Text contrast ≥ 4.5:1; scrolling honours `prefers-reduced-motion`. Stacked below `lg`, two columns at `lg` and above. Map wrapper has an explicit Tailwind height (REQ-NF-005). |
+| **Observability** (DES-022) | No metrics, tracing, or alerting. A single `console.error` in the fetch-failure path, and in development a `console.warn` with the count of records dropped by `normalizeParks`. |
+| **Accessibility and layout** (DES-020) | **Page shell:** one `<h1>`, a `<main>` landmark, and labelled `<section>`s for the list ("Parks"), the map ("Parks map"), and the details; scaffold metadata replaced. **List:** `<button>`s in a `<ul>`, `aria-current` on the selected one. **Details:** heading focusable (`tabindex="-1"`). **Selected state** (list item and marker) uses a non-colour cue (border/weight on the item, size or ring on the marker) as well as colour. `focus-visible:` rings on controls. Text contrast ≥ 4.5:1; scrolling honours `prefers-reduced-motion`. **No nested scroll containers:** the page scrolls. **Images** sit in fixed aspect-ratio boxes so loaded and fallback states do not shift layout. Stacked below `lg`; at `lg`, list left and map above details on the right (DOM order = visual order). Map wrapper has an explicit Tailwind height (REQ-NF-005). |
 | **Theme** (DES-021) | Light theme only: OSM tiles are always light and AC-013 would otherwise need two themes. Removes the scaffold's `prefers-color-scheme: dark` block and sets `color-scheme: light`. (Approved.) |
 
 ## Section 7 — Test Strategy (DES-023)
@@ -232,7 +232,7 @@ Each AC has exactly one primary level. Secondary levels appear only where they p
 | AC-006 | 010, 020, 027 | Real browser at 375 and 1280 px | No horizontal scroll; stacked vs side-by-side | e2e (manual) | none | Sample, long-name fixture | `scrollWidth <= clientWidth` | Screenshots at both widths + scroll check |
 | AC-007 | 013, 008 | Browser API calls | Zero `navigator.geolocation` access | integration | none (static code search recorded as review note) | Sample, spy | Call count = 0 | Vitest report |
 | AC-008 | 005, 013, 028 | Leaflet `tileerror` in Vitest | Notice appears; list and details still pass the AC-001 flow | resilience | e2e (manual): block `tile.openstreetmap.org` in DevTools | Simulated `tileerror` event | Pass/fail | Vitest report + manual note |
-| AC-009 | 006, 008, 016, 017 | HTTP handler, then UI | 200, JSON content type, deep-equals file; forced failure shows message + Retry that re-requests | integration | resilience: failure and recovery path in the UI | Handler called directly; mocked failing then succeeding fetch | Exact | Vitest report |
+| AC-009 | 006, 008, 016, 017 | HTTP handler, then UI | 200, JSON content type, body deep-equals the file **read from disk** (not the same import); forced failure shows message + Retry that re-requests | integration | resilience: failure and recovery path in the UI; e2e (manual): block `/api/parks` in DevTools, see error and Retry, unblock, Retry loads parks | Handler called directly in the node test environment; mocked failing then succeeding fetch | Exact | Vitest report + manual note |
 | AC-010 | 031 | Repository files | Required README sections and OSM caveat present | integration (doc-structure check) | none | README | Heading checklist | Test output + clean-checkout run note |
 | AC-011 | 004, 014, 030 | Rendered UI | Exact verbatim and formatted strings for `prospect-park` | integration | unit: formatters | Sample record | Exact string match | Vitest report |
 | AC-012 | 005, 009, 012 | Rendered UI | One selected list item, one selected marker, `activeElement` = heading | integration | e2e (manual): heading within the viewport | Sample | Exact; viewport by inspection | Vitest report + manual note |
@@ -252,22 +252,22 @@ Each AC has exactly one primary level. Secondary levels appear only where they p
 | Resilience | Tile, API, and image failure and recovery |
 
 ### 7.3 Test Data and Determinism
-A fixture builder in `src/lib/fixtures/` clones sample records. Tests mock `fetch`, simulate Leaflet `tileerror`, and fire `error` on images. No clocks or randomness are involved. jsdom has no layout, so viewport, bounds, contrast, and focus-ring claims are verified manually. If Leaflet proves unreliable in jsdom, `ParkMap` is mocked at the explorer boundary and marker behaviour is tested in its own file; this is checked during implementation.
+A fixture builder in `src/lib/fixtures/` clones sample records. Tests mock `fetch`, simulate Leaflet `tileerror`, and fire `error` on images. No clocks or randomness are involved. jsdom has no layout, so viewport, bounds, contrast, and focus-ring claims are verified manually. If Leaflet proves unreliable in jsdom, `ParkMap` is mocked at the explorer boundary and marker behaviour is tested in its own file; this is checked during implementation. Test setup: the Vitest config maps the `@/*` alias and enables the React plugin; the API test declares the node environment; `next/dynamic` is mocked or resolved synchronously in component tests; jsdom lacks `scrollIntoView` and `matchMedia`, so `useFocusOnSelect` feature-checks them and tests stub them where they assert scrolling. Marker keyboard activation (Enter and Space) is verified against the installed Leaflet 1.9.4, because the reachable Leaflet docs describe a newer branch.
 
 ### 7.4 Positive, Negative, and Failure Paths
 Positive: AC-001, 002, 011, 012. Negative: AC-003, 004, 015. Failure and recovery: AC-008, AC-009 (API error → Retry succeeds), image error.
 
 ### 7.5 Execution and Evidence
-Scripts (to be added, not existing today): `npm test` (Vitest). Existing: `npm run lint`, `npm run build`. There is no `test:e2e`. There is no CI, so results go in the README Verification section with exact commands, outcomes, and a dated pass/fail for each manual e2e item (AC-002, AC-005 focus ring, AC-006, AC-008, AC-012, AC-013, AC-014). An independent reviewer reruns the same commands and manual steps and compares against the exact assertions above. Risk accepted: AC-002, 006, 013, and 014 cannot be re-checked automatically.
+Scripts (to be added, not existing today): `npm test` (Vitest). Existing: `npm run lint`, `npm run build`. There is no `test:e2e`. There is no CI, so results go in the README Verification section with exact commands, outcomes, and a dated pass/fail for each manual e2e item (AC-002, AC-005 focus ring, AC-006, AC-008, AC-009 error path, AC-012, AC-013, AC-014). An independent reviewer reruns the same commands and manual steps and compares against the exact assertions above. Risk accepted: AC-002, 006, 013, and 014 cannot be re-checked automatically.
 
 ## Section 8 — Design Decisions & Tradeoffs
 
 | ID | Decision | Options considered | Recommendation and rationale | Tradeoff |
 |---|---|---|---|---|
 | DES-024 (D-01) | Test tooling | (a) Vitest + React Testing Library, no browser automation; (b) Vitest + RTL + Playwright + axe; (c) Jest + RTL + Cypress | **(a), per the project owner's decision.** Vitest with `user-event`, `jest-dom`, `jsdom`, `@vitejs/plugin-react`, and `vitest-axe` (to be verified at install). The owner runs end-to-end checks manually. | Fewer dependencies, but jsdom has no layout, real Leaflet viewport, or computed contrast, so those checks are manual. Vitest 5 asks for `@types/node` ^22 or ≥24 while the project has ^20, so that devDependency is bumped. |
-| DES-025 (D-02) | Marker icons | (a) Leaflet default image icons with asset imports; (b) Tailwind-styled `divIcon` | **(b).** Avoids the bundler icon-path problem, needs no assets, gives selected and unselected styling directly. | Custom markup to maintain. Accessible names and keyboard activation are verified during implementation (AC-013, AC-012), not assumed. |
+| DES-025 (D-02) | Marker icons | (a) Leaflet default image icons with asset imports; (b) Tailwind-styled `divIcon` | **(b).** Avoids the bundler icon-path problem, needs no assets, gives selected and unselected styling directly. Details: `className: ""` to remove Leaflet's default `.leaflet-div-icon` box; Tailwind classes written as literal strings so Tailwind generates them; each marker has a unique `title` plus visually hidden park-name text in the icon HTML (Leaflet's own guidance for `divIcon` labels); the selected marker differs by size or ring, not colour alone; `keyboard: true` (tabindex 0, role button). | Custom markup to maintain. Enter and Space activation is verified on Leaflet 1.9.4 during implementation; if Space does not activate a marker, a small `keydown` handler on the icon element is added. |
 | DES-026 (D-03) | Initial map view | (a) Mount the map after data is ready and pass `bounds`; (b) always mount and call `fitBounds` from a child | **(a).** `MapContainer` `bounds` are fixed after first render and data is fixed after `ready`, so (a) is simpler. 0 marker parks → world view; 1 → centred at zoom 14. | The map is not mounted while loading or in error, so a same-height placeholder prevents layout shift. |
-| DES-027 (D-04) | Layout | (a) `lg` (1024 px), stacked order list → map → details; (b) `md`; map first | **(a).** The AC widths (375 and 1280 px) sit clearly on either side of `lg`. Selection scrolls to the details heading, so a panel below the map stays reachable. Desktop: list and details in one column, map in the other. | Details are far from the list on phone; scroll and focus compensate. |
+| DES-027 (D-04) | Layout | (a) `lg` (1024 px), DOM order list → map → details; (b) `md`; map first; (c) desktop with list and details in one column and the map in the other | **(a), revised after adversarial review (F2).** The AC widths (375 and 1280 px) sit clearly on either side of `lg`. DOM order is list → map → details on every viewport. Phone: stacked in that order. Desktop: list in the left column; map above details in the right column, so tab order matches visual order. Selection scrolls to the details heading unless it is already fully visible. (c), previously approved, was dropped because it made tab order differ from visual order on desktop. | On phone the details are far from the list; scroll and focus compensate. On desktop, details sit under the map, so the map height is capped (Tailwind) to keep the details heading near the fold. |
 | DES-028 (D-05) | Tile-failure feedback | (a) Silent; (b) one non-blocking `role="status"` note | **(b).** Otherwise residents see a blank map with no explanation. Set once, since `tileerror` fires per tile. | One more element to test. |
 | DES-029 | Image element | (a) `next/image`; (b) plain `<img>` | **(b).** `next/image` needs `remotePatterns` per host and the sample host is a non-resolving placeholder. Plain `<img>` also fires `error` for the fallback. | No automatic image optimisation. |
 
@@ -289,12 +289,12 @@ All are O(n) over at most a few dozen parks.
 ### 9.2 Initial map view (DES-026)
 - **0 marker parks:** world view, `center [20, 0]`, zoom 2.
 - **1 marker park, or ≥ 2 with all-identical coordinates:** centre on it at zoom 14 (identical points would give zero-area bounds).
-- **≥ 2 distinct points:** bounds of min/max lat and lng, padding `[32, 32]` so edge markers are not clipped.
+- **≥ 2 distinct points:** bounds of min/max lat and lng, padding `[32, 32]` so edge markers are not clipped, and `maxZoom: 15` so two very close parks do not zoom in extremely.
 
 *Assessment:* covers the cases AC-002 and AC-015(b) test.
 
 ### 9.3 Focus on selection (DES-009)
-Selection increments `focusRequest`. The effect runs only when `focusRequest > 0` (never on first load, Q-007): it focuses the details heading, then scrolls it into view with `behavior: "smooth"`, or `"auto"` under `prefers-reduced-motion`.
+Selection increments `focusRequest`. The effect runs only when `focusRequest > 0` (never on first load, Q-007): it focuses the details heading, then scrolls it into view only if it is not already fully inside the viewport, with `behavior: "smooth"`, or `"auto"` under `prefers-reduced-motion`. `scrollIntoView` and `matchMedia` are feature-checked before use (jsdom lacks both).
 
 *Assessment:* a counter, not the selected ID, drives the effect, so re-activating the same park refocuses. Pulling focus back after the user moved it is the intended behaviour (Q-006).
 
@@ -312,6 +312,8 @@ Split the slug on `-`, join with spaces, uppercase the first character (`dog-run
 - Run `npm test`, `npm run lint`, and `npm run build` before claiming a phase done; report exact output.
 - Make one atomic commit per phase once checks pass.
 - Record manual e2e results (date, pass/fail) in the README Verification section.
+- Abort in-flight requests on cleanup and ignore responses from superseded requests.
+- Keep Leaflet and `react-leaflet` imports inside `ParkMap` (and its own helper files) only; `lib/` and everything server-rendered stay DOM-free.
 
 ### Ask First
 - Adding or upgrading any runtime or dev dependency (`leaflet`, `react-leaflet`, the Vitest stack, and the `@types/node` bump all need approval).
@@ -326,6 +328,8 @@ Split the slug on `-`, join with spaces, uppercase the first character (`dog-run
 - Call `navigator.geolocation` or any location API.
 - Invent, infer, or "fix" data: no added city or state, no "/5", no corrected coordinates, no open/closed status.
 - Use `dangerouslySetInnerHTML`, or render a non-`http(s)` image URL.
+- Import `leaflet` or `react-leaflet` statically outside `ParkMap`, which would break the server render (AC-014).
+- Distinguish selected state by colour alone, or add nested scroll containers.
 - Show stack traces or raw error text to users.
 - Weaken, skip, or delete a test just to make a gate pass.
 - Commit secrets, or `git push` without an explicit request.
@@ -370,12 +374,12 @@ DES-031 is the `README.md` (REQ-F-011): install and run, what works, decisions, 
 | DES-031 | REQ-F-011, CON-002, AC-010 | `README.md` | Doc check |
 
 ## Human Quality Gate
-- Status: Pending
+- Status: Approved
 - Required reviewers: Product owner; technical owner. Security owner not required (no auth, PII, secrets, or privileged access).
-- Artifact revision: this file as saved 2026-10-02 16:49, built on requirements.md sha256 `9de8b75c23bc` and the approved analysis
-- Decision and conditions: The full draft was approved section by section by the user in conversation, and the user asked for it to be saved. The adversarial review (Step 6) has **not** run yet; any change from it resets the gate. Final approval is pending.
-- Evidence: Conversation responses ("yes", "looks good", "save the design"); no PR or ticket.
-- Approved by / at: — (final approval pending)
+- Artifact revision: this file with content sha256 prefix `8e0febc83b1a` (the revision reviewed, before this gate block was updated), built on requirements.md sha256 `9de8b75c23bc` and the approved analysis
+- Decision and conditions: The full draft was approved section by section by the user in conversation, and saved at 16:49. An adversarial review then ran (4 rounds; 21 findings: 8 flaws, 5 edge cases, 5 code-compatibility, 3 non-functional) and all were accepted and applied in place by the user's choice, including the DES-027 desktop layout change (list left; map above details right). That was a material edit, so the gate was reset to Pending. The user then reviewed the revised SDD and approved it with no conditions.
+- Evidence: Conversation responses ("yes", "looks good", "save the design", and "looks good to me" in reply to the request to confirm approval of the revised SDD); no PR or ticket.
+- Approved by / at: User (product and technical owner), 2026-10-02 16:56
 
 ## References
 - Input: docs/requirement/requirements.md (sha256 `9de8b75c23bc`)
