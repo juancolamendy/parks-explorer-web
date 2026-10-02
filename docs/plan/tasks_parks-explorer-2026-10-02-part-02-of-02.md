@@ -485,7 +485,7 @@ Phases 11, 12, and 13 are covered by Part 1's Checkpoint 2 (Phase 12, Wave 1) an
 **Size:** XS
 **Files affected:** `README.md`, `src/readme.test.ts`
 **Task:**
-- [ ] TASK-017 — README
+- [x] TASK-017 — README
 
   **Requirements:** REQ-F-011, CON-002, AC-010 (and the manual criteria AC-002, AC-005, AC-006, AC-008, AC-009, AC-012, AC-013, AC-014)
   **Design:** DES-031, DES-023
@@ -530,7 +530,22 @@ Phases 11, 12, and 13 are covered by Part 1's Checkpoint 2 (Phase 12, Wave 1) an
   | TEST-050 | AC-009 | end-to-end | Secondary (manual) | DevTools block of `/api/parks`, then unblock | Reload, click Retry | Alert plus Retry; Retry loads parks after unblocking | Blank screen = fail | Real API failure |
   | TEST-051 | AC-012 | end-to-end | Secondary (manual) | Browser at 375 px and 1280 px | Select a park from list and from a marker | Details heading inside the viewport after selection; marker visibly selected | Heading off-screen = fail | Real scroll and focus |
 
-  **Completion evidence:** per Phase evidence template (Part 1), plus the README checklist as written.
+  **Completion evidence (2026-10-02, plan worktree, branch `plan/parks-explorer`; sequential phase, results from RESULT-257):**
+  - Changed files: `README.md` (CHG-029, scaffold README replaced), `src/readme.test.ts` (new, 19 tests under TEST-043).
+  - Red baseline — RESULT-257: `npm test -- src/readme.test.ts` → exit 1; 19 tests, 18 failed (scaffold README: no required sections, scaffold text, no OSM caveat, no checklist rows), 1 passed (the npm-script check, because the scaffold only names `npm run dev`).
+  - Results:
+    - RESULT-258 — same command after writing the README: exit 0; 19 selected, 19 passed, 0 failed, 0 skipped.
+    - RESULT-259 — `npm test` (full suite): exit 0; 17 files, 262 tests, 262 passed, 0 failed, 0 skipped.
+    - RESULT-260 — `npm run lint`: exit 0. RESULT-261 — `npx tsc --noEmit`: exit 0. RESULT-262 — `npm run build`: exit 0.
+    - RESULT-263 — mutation check of `README.md` against `readme.test.ts` (restored byte-identical each time): M1 required heading renamed, M2 a checklist row removed, M3 a row's AC changed, M4 Owner/Result/Date columns reordered, M5 a nonexistent npm script, M6 OSM caveat removed, M7 placeholder-image note removed, M8 licence note removed, M9 scaffold text added → all 9 exit 1; no survivors.
+  - Manual checklist (TEST-044 to TEST-051): written in the README with owner, result and date columns, all "pending owner run". They get their own `RESULT-*` when the owner runs them (final checkpoint). R-007 (manual-evidence risk) is recorded in the README Verification section; the owner already accepted it in the SDD.
+  - Evidence anchors: `README.md` sections "Install and run", "What works", "Decisions", "Omissions", "Known issues", "Verification" (manual checklist table), "Before public use".
+  - Actual authored LOC: tests about 58 (plan 30–45: about 13 over, from per-section and per-check `it.each` rows); docs about 80 lines of README prose plus the 8-row table (plan 120–180: under); phase total well under 400.
+  - Discovered decisions / follow-ups:
+    1. The README repeats the open items for the owner (Vite config ESM warning, retry not clearing the selection) as Known issues; none were fixed here (outside allowed files).
+    2. The test checks that the checklist rows exist and name the right AC, not that the owner has run them; Phase 18 does not change that, so the manual rows stay an owner action.
+    3. None other discovered.
+  - Remaining uncertainty: the README states layout and behaviour as built; the manual rows are the only proof of the browser-level claims.
 
 **Expected authored LOC:** tests +30–45; docs +120–180 (150–225)
 **Success criteria:** README test green; checklist contains all eight manual rows with owner/result/date columns.
@@ -625,5 +640,5 @@ Covered by Part 1: Phase 12 in Checkpoint 2 (Wave 1) and Phases 11 and 13 in Che
 - [x] Phase 14: `ParkExplorer` data states
 - [x] Phase 15: Map wiring and focus handoff
 - [x] Phase 16: App shell: page, metadata, light theme
-- [ ] Phase 17: README and manual verification checklist
+- [x] Phase 17: README and manual verification checklist
 - [ ] Phase 18: Traceability and structure guard tests
