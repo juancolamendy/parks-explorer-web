@@ -135,7 +135,7 @@ Any material plan edit resets this approval to `Pending`. `cg-exec` must not sta
 ### Checkpoint Approvals
 | Checkpoint | Prerequisite phases | Status | Artifact revision | Evidence / approver |
 |---|---|---|---|---|
-| Checkpoint 1 | Phases 1–3 | Pending | Part 1 as committed with the Phase 3 commit (see the commit hash in the cg-exec Phase 3 report) | Phases 1–3 complete. Results covered: RESULT-001 to RESULT-007 (Phase 1), RESULT-008 to RESULT-013 (Phase 2), RESULT-014 to RESULT-023 (Phase 3); latest full suite RESULT-020: 3 files, 65 tests passed; lint RESULT-021, tsc RESULT-022, build RESULT-023 all exit 0. Awaiting human approval before Phase 4. |
+| Checkpoint 1 | Phases 1–3 | **Approved** (2026-10-02 17:21, no conditions; evidence: user reply "approve. continue" to the Checkpoint 1 request) | Part 1 as committed at `001a4e1` (the Phase 3 commit) | Phases 1–3 complete. Results covered: RESULT-001 to RESULT-007 (Phase 1), RESULT-008 to RESULT-013 (Phase 2), RESULT-014 to RESULT-023 (Phase 3); latest full suite RESULT-020: 3 files, 65 tests passed; lint RESULT-021, tsc RESULT-022, build RESULT-023 all exit 0. Awaiting human approval before Phase 4. |
 | Checkpoint 2 | Phases 4–6 | Pending | — | — |
 | Checkpoint 3 | Phases 7–8 | Pending | — | — |
 | Checkpoint 4 | Phases 9–10 | Pending | — | — |
@@ -766,11 +766,11 @@ Every phase's **Completion evidence** records: changed files; red-baseline comma
 ## Checkpoints
 
 ### Checkpoint 1: After Phases 1–3
-- [ ] `npm test` passes
-- [ ] `npm run build` succeeds
-- [ ] Test harness, data boundary, and client call are working
-- [ ] Review with human before proceeding
-- [ ] Record an Approved checkpoint gate before Phase 4
+- [x] `npm test` passes (RESULT-020: 3 files, 65 tests)
+- [x] `npm run build` succeeds (RESULT-023)
+- [x] Test harness, data boundary, and client call are working
+- [x] Review with human before proceeding
+- [x] Record an Approved checkpoint gate before Phase 4
 
 ### Checkpoint 2: After Phases 4–6
 - [ ] `npm test` passes
