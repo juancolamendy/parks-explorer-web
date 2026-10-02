@@ -483,7 +483,7 @@ Every phase's **Completion evidence** records: changed files; red-baseline comma
 **Size:** XS
 **Files affected:** `src/lib/mapView.ts`, `src/lib/mapView.test.ts`
 **Task:**
-- [ ] TASK-005 — `getMapView`
+- [x] TASK-005 — `getMapView`
 
   **Requirements:** REQ-F-004, AC-002, AC-015
   **Design:** DES-026, DES-030 (§9.2)
@@ -521,7 +521,23 @@ Every phase's **Completion evidence** records: changed files; red-baseline comma
   | TEST-011 | AC-015 | unit | Secondary — view rules for 0/1/identical points are a pure-logic risk; Primary is Phase 15 | Empty list; one point; three identical points | `getMapView(points)` | World view `[20, 0]` zoom 2; point view zoom 14 | No zero-area bounds descriptor | 0 and 1 marker |
   | TEST-012 | AC-002 | unit | Secondary — bounds math; Primary is manual (Phase 17) | The 12 sample coordinates; two very close points | `getMapView(points)` | Bounds contain every input point; padding `[32, 32]`; `maxZoom` 15 | No point outside bounds | Close points |
 
-  **Completion evidence:** per Phase evidence template.
+  **Completion evidence (2026-10-02, plan worktree, branch `plan/parks-explorer`):**
+  - Changed files: `src/lib/mapView.ts`, `src/lib/mapView.test.ts`.
+  - Docs note (Step 2.5): pure function returning plain descriptors, so no framework API is used here; the Leaflet `fitBounds` semantics it feeds (`padding`, and `maxZoom` clamping the computed zoom) were confirmed in the Leaflet source docs during the design review and are re-verified against the installed 1.9.4 in Phase 6.
+  - Red baseline — RESULT-031: `npm test -- src/lib/mapView.test.ts` → exit 1; suite failed to load, 0 tests ran: `Cannot find package '@/lib/mapView'` (the expected missing-module failure).
+  - Results:
+    - RESULT-032 — `npm test -- src/lib/mapView.test.ts`, exit 0, TEST-011 and TEST-012; 1 file, 8 selected, 8 passed, 0 failed, 0 skipped (TEST-011: 4, TEST-012: 4).
+    - RESULT-033 — `npm test` (full suite): exit 0; 5 files, 84 tests, 84 passed, 0 failed, 0 skipped.
+    - RESULT-034 — `npm run lint`: exit 0.
+    - RESULT-035 — `npx tsc --noEmit`: exit 0.
+    - RESULT-036 — mutation check of the tests (implementation temporarily broken, then restored byte-identical): M1 world center changed → 1 failed; M2 point zoom 13 → 2 failed; M3 identical-points guard replaced by a single-point check → 1 failed; M4 max zoom 18 → 2 failed; M5 no padding → 1 failed; M6 wrong east bound → 4 failed; M7 north and south swapped → 3 failed; every run exit 1, so all seven are caught.
+  - Evidence anchors: `src/lib/mapView.ts:27` (`getMapView`), `src/lib/mapView.ts:5` (`MapView`), `src/lib/mapView.test.ts:12` (TEST-011 group), `src/lib/mapView.test.ts:62` (TEST-012 group).
+  - Actual authored LOC: production 36; tests 91 → phase total 127 vs plan 80–115: about 12 over the upper bound; under the 400-line phase limit.
+  - Discovered decisions / follow-ups:
+    1. The descriptor is a discriminated union (`world`, `point`, `bounds`) with `[lat, lng]` tuples, so Phase 6 can pass `center`/`zoom` or `bounds`/`padding`/`maxZoom` straight to Leaflet's `MapContainer` without this file importing Leaflet.
+    2. Two points that differ in only one axis (for example the same latitude) still produce a `bounds` view; only fully coincident points collapse to a `point` view. Leaflet's behavior on a zero-height bounds is verified in Phase 6 (R-003 feasibility check).
+    3. TEST-012's "very close points" case asserts only that the zoom cap is present in the descriptor; the actual clamping happens inside Leaflet and is checked in Phase 6.
+  - Remaining uncertainty: item 2's Leaflet behavior, to be confirmed in Phase 6.
 
 **Expected authored LOC:** production +30–45; tests +50–70 (80–115)
 **Success criteria:** 2 tests green.
@@ -822,7 +838,7 @@ Every phase's **Completion evidence** records: changed files; red-baseline comma
 - [x] Phase 2: Park model and `normalizeParks`
 - [x] Phase 3: `fetchParks` client call
 - [x] Phase 4: `useParksFetch` hook
-- [ ] Phase 5: Map view helper
+- [x] Phase 5: Map view helper
 - [ ] Phase 6: `ParkMap` component
 - [ ] Phase 7: `ParksContext` and `useParks`
 - [ ] Phase 8: `useFocusOnSelect`
