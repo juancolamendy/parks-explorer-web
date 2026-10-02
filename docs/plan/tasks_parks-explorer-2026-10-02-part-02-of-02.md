@@ -266,7 +266,7 @@ Phases 11, 12, and 13 are covered by Part 1's Checkpoint 2 (Phase 12, Wave 1) an
 **Size:** S
 **Files affected:** `src/components/ParkExplorer.tsx`, `src/components/ParkExplorer.test.tsx`
 **Task:**
-- [ ] TASK-014 — `ParkExplorer` data states
+- [x] TASK-014 — `ParkExplorer` data states
 
   **Requirements:** REQ-F-001, REQ-F-002, REQ-F-003, REQ-F-007, REQ-F-009, AC-001, AC-003, AC-009, AC-015
   **Design:** DES-001, DES-007, DES-011, DES-013, DES-020
@@ -306,7 +306,25 @@ Phases 11, 12, and 13 are covered by Part 1's Checkpoint 2 (Phase 12, Wave 1) an
   | TEST-034 | AC-009 | resilience | Secondary — UI failure and recovery; Primary is the API test (Phase 12) | `fetchParks` rejects, then resolves | Render; click Retry | `role="alert"` message and "Retry" button; no raw error text; Retry re-requests (2 calls) and the list appears | No blank screen | Failure then recovery |
   | TEST-035 | AC-015 | integration | Secondary — (a) and (c) before the map exists; the Primary is TEST-040 in Phase 15 | `[]`; all-invalid; records with bad or duplicate `id`/`name` | Render | "No parks available." for the first two; excluded records absent; first duplicate listed | No blank screen | Empty and bad data |
 
-  **Completion evidence:** per Phase evidence template (Part 1).
+  **Completion evidence (2026-10-02, plan worktree, branch `plan/parks-explorer`; sequential phase, results from RESULT-230):**
+  - Changed files: `src/components/ParkExplorer.tsx`, `src/components/ParkExplorer.test.tsx`.
+  - Docs note (Step 2.5): no new framework pattern; the Client Component plus context provider and React `useRef` ref-passing were checked against the Next.js and React docs in Phases 4 and 7.
+  - Red baseline — RESULT-230: `npm test -- src/components/ParkExplorer.test.tsx` → exit 1; suite failed to load, 0 tests ran: `Failed to resolve import "@/components/ParkExplorer"` (the expected missing-module failure).
+  - Results:
+    - RESULT-231 — `npm test -- src/components/ParkExplorer.test.tsx`, exit 0, TEST-032 to TEST-035; 1 file, 22 selected, 22 passed, 0 failed, 0 skipped (TEST-032: 15, TEST-033: 1, TEST-034: 3, TEST-035: 3).
+    - RESULT-232 — `npm test` (full suite): exit 0; 14 files, 219 tests, 219 passed, 0 failed, 0 skipped.
+    - RESULT-233 — `npm run lint`: exit 0.
+    - RESULT-234 — `npm run build`: exit 0 (routes `/`, `/_not-found`, `ƒ /api/parks`).
+    - RESULT-235 — `npx tsc --noEmit`: exit 0.
+    - RESULT-236 — mutation check of the tests (component temporarily broken, then restored byte-identical): M1 loading no longer a status → 1 failed; M2 Retry does nothing → 1 failed; M3 failure not an alert → 2 failed; M4 no empty-data branch → 2 failed; M5 details shown while loading → 1 failed; M6 nothing marked current → 13 failed; M7 selecting does nothing → 14 failed; M8 details never shows the park → 14 failed; every run exit 1, so all eight are caught.
+  - Evidence anchors: `src/components/ParkExplorer.tsx:73` (`ParkExplorer`), `:19` (`ExplorerContent`), `:15` (`Message`); `src/components/ParkExplorer.test.tsx:36` (TEST-032), `:105` (TEST-033), `:124` (TEST-034), `:179` (TEST-035).
+  - Actual authored LOC: production 62; tests 148 → phase total 210, within the plan's 170–250.
+  - Discovered decisions / follow-ups:
+    1. **Where the states render.** Loading, failure, and empty data replace only the list slot; the map and details slots are `null` in those states, so the layout (with its `<h1>`) is always present and the "Select a park…" prompt never appears while there is nothing to select.
+    2. Loading is a `role="status"` wrapper and failure a `role="alert"` wrapper around a shared message box; the failure text comes from `useParksFetch` (no raw error text), and Retry calls the context's `retry`.
+    3. **For Phase 15:** the heading ref is already created and passed to `ParkDetails`; Phase 15 attaches `useFocusOnSelect(headingRef, focusRequest)` and replaces the `map={null}` in the ready branch with the client-only `ParkMap`. No focus change happens on load today (asserted by TEST-032).
+    4. The Phase 7 retry-selection question is unchanged: a selection made before a failed load is kept and reappears if the retry returns the same data. The tests here do not depend on either behavior.
+  - Remaining uncertainty: none for this phase's outcome.
 
 **Expected authored LOC:** production +70–100; tests +100–150 (170–250)
 **Success criteria:** 4 tests green; error, empty, and ready states each render distinctly.
@@ -563,7 +581,7 @@ Covered by Part 1: Phase 12 in Checkpoint 2 (Wave 1) and Phases 11 and 13 in Che
 - [x] Phase 11: Park details panel (Wave 2)
 - [x] Phase 12: `GET /api/parks` route (Wave 1)
 - [x] Phase 13: `ExplorerLayout` (Wave 2)
-- [ ] Phase 14: `ParkExplorer` data states
+- [x] Phase 14: `ParkExplorer` data states
 - [ ] Phase 15: Map wiring and focus handoff
 - [ ] Phase 16: App shell: page, metadata, light theme
 - [ ] Phase 17: README and manual verification checklist
