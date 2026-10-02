@@ -84,7 +84,7 @@ Registry data read in this run (`npm view`).
 | `vitest-axe` | dev | 0.1.0 | MIT | Structural accessibility checks (AC-013 secondary) | `axe-core` directly | 15 |
 
 - Provenance: all from the public npm registry; `dist.integrity` values recorded in this run (e.g. `leaflet` `sha512-nxS1ynzJOmOl…`, `react-leaflet` `sha512-CWbTpr5vcHw5…`); each install phase re-records `npm ls <pkg>` and `npm audit` output as evidence.
-- **Licence review (blocking for Phase 6):** `react-leaflet` is under the Hippocratic License 2.1, an "ethical source" licence with use restrictions that is not OSI-approved. The other packages are MIT/BSD-2. See risk R-001; Phase 6 must not start without the technical owner's recorded decision.
+- **Licence review (was blocking for Phase 6; resolved):** `react-leaflet` is under the Hippocratic License 2.1, an "ethical source" licence with use restrictions that is not OSI-approved. The other packages are MIT/BSD-2. The technical owner reviewed and agreed with the licence on 2026-10-02 17:09 (risk R-001); the decision is recorded in the Plan Approval gate.
 - Approval: Plan Approval below covers the dev dependencies for Phases 1, 4, 6, 15; the runtime dependencies for Phase 6 additionally require the R-001 decision.
 
 ## Observability **(plan-set scope)**
@@ -102,12 +102,12 @@ N/A: local assessment, no deployment, no feature flag, no rollout stages. Rollba
 ## Risks and Unresolved Decisions **(plan-set scope)**
 | Risk / decision | Impact | Owner | Required decision or mitigation | Due before |
 |---|---|---|---|---|
-| R-001 `react-leaflet` is Hippocratic-2.1 licensed | Legal/policy exposure; CON-002 mandates React Leaflet | Technical owner (user) | Record approval to use it, or authorize a change to CON-002 (direct Leaflet use), which resets the requirement, analysis, and SDD gates | Phase 6 |
+| R-001 `react-leaflet` is Hippocratic-2.1 licensed | Legal/policy exposure; CON-002 mandates React Leaflet | Technical owner (user) | **Resolved 2026-10-02 17:09:** the user agreed with the licence; use of `react-leaflet` approved. (Alternative, not taken: direct Leaflet use, which would have changed CON-002.) | Phase 6 |
 | R-002 Enter/Space activation of Leaflet 1.9.4 markers is unverified | AC-002/AC-012 keyboard path | Implementer | Phase 6 TEST-014 decides; add the SDD-approved `keydown` fallback if Space fails | Phase 6 |
 | R-003 Leaflet may not work reliably in jsdom | Marker-level tests (AC-002 secondary, AC-012, AC-015b) | Implementer | Timeboxed (≈15 min) feasibility check at the start of Phase 6, recorded as evidence; fallback per SDD §7.3: stub `ParkMap` in explorer tests and test markers in `ParkMap.test.tsx` only | Phase 6 |
-| R-004 `vitest-axe` 0.1.0 is pre-1.0; Vitest 5 compatibility unverified | AC-013 secondary check | Implementer | Verify at Phase 15 install; fall back to `axe-core` directly (small custom matcher) | Phase 15 |
+| R-004 `vitest-axe` 0.1.0 is pre-1.0; Vitest 5 compatibility unverified | AC-013 secondary check | Implementer | **Accepted 2026-10-02 17:09.** Verify at Phase 15 install; fall back to `axe-core` directly (small custom matcher) | Phase 15 |
 | R-005 `@types/node` bump `^20` → `^24` could change type-checking | Build break | Implementer | Phase 1 runs `tsc --noEmit` and `npm run build` after the bump | Phase 1 |
-| R-006 Lockfile excluded from the "fewer than 5 files" count (see Assumptions) | Interpretation of blast radius | Technical owner | Approve this interpretation with the plan | Phase 1 |
+| R-006 Lockfile excluded from the "fewer than 5 files" count (see Assumptions) | Interpretation of blast radius | Technical owner | **Accepted 2026-10-02 17:09** with the plan approval | Phase 1 |
 | R-007 Manual end-to-end checks are owner-run; AC-002, 006, 013, 014 cannot be re-checked automatically | Regressions caught only on next manual run | Product/technical owner (user) | Risk accepted in the SDD; owner runs the README checklist and records results | Final checkpoint |
 
 ## Assumptions **(plan-set scope)**
@@ -123,12 +123,12 @@ Only what the SDD did not pin.
 ## Human Quality Gates
 
 ### Plan Approval
-- Status: Pending
+- Status: Approved
 - Required reviewers: Technical owner; product owner. Security owner not required (no auth, PII, secrets).
-- Artifact revision: Part 1 content digest and Part 2 content digest recorded at approval; built on SDD `725dded2aabe`, requirements `9de8b75c23bc`, analysis `47b4c2cbed5a`
-- Decision and conditions: Awaiting approval. Approval should also record decisions on R-001 (before Phase 6) and R-006.
-- Evidence: —
-- Approved by / at: —
+- Artifact revision: Part 1 content sha256 prefix `df832e549b04` and Part 2 content sha256 prefix `07271dbf4394` (the revisions reviewed, before this approval was recorded); built on SDD `725dded2aabe`, requirements `9de8b75c23bc`, analysis `47b4c2cbed5a`
+- Decision and conditions: Approved, no conditions. Decisions recorded with the approval: **R-001** the user agrees with the `react-leaflet` Hippocratic-2.1 licence, so Phase 6 is unblocked on that point; **R-004** accepted (`vitest-axe` 0.1.0, with the `axe-core` fallback); **R-006** accepted (lockfile excluded from the 5-file count).
+- Evidence: Recorded user response in conversation: "Approve the plan." with the three decisions above.
+- Approved by / at: User (technical and product owner), 2026-10-02 17:09
 
 Any material plan edit resets this approval to `Pending`. `cg-exec` must not start Phase 1 until this gate is approved for the current revision.
 
