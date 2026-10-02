@@ -3,7 +3,7 @@ _Date: 2026-10-02_
 _Input: docs/design/design_spec_parks-explorer-2026-10-02.md (SDD, Human Quality Gate Approved 2026-10-02 16:56; content digest `725dded2aabe`)_
 
 _Plan part: 2 of 2; global phases 11–18_
-_Prerequisite: docs/plan/tasks_parks-explorer-2026-10-02-part-01-of-02.md (Phases 1–10 complete and Checkpoint 4 approved)_
+_Prerequisite (relaxed by the parallel-waves patch): docs/plan/tasks_parks-explorer-2026-10-02-part-01-of-02.md. Each Part 2 phase needs only the tasks in its `Depends on` list to be complete and its wave to have started (Phase 12: Wave 1; Phases 11 and 13: Wave 2); Phases 14–18 additionally need Checkpoint 3 Approved. See Part 1, Parallel execution protocol._
 _Next part: none_
 
 Shared sections are in Part 1 and apply here unchanged: Design Waiver, High-Risk Items, Testing Strategy, Integration Points, Repository Evidence, Data Flow and Trust Boundaries, Contract Diffs, Migration and Rollback, Dependencies, Observability, Threat Model, Release and Rollback, Risks (R-001 to R-007), Assumptions (A1 to A7), Layer Coverage, Pull Request LOC Validation, Git isolation, and the Phase evidence template.
@@ -19,28 +19,29 @@ Composes the Part 1 building blocks into the working app: `ParkDetails` with ima
 ## Human Quality Gates
 
 ### Plan Approval
-- Status: Approved
+- Status: **Pending** (reset 2026-10-02 17:31 by the parallel-waves patch; re-approval is recorded once, in Part 1's Plan Approval gate, and covers both parts)
 - Required reviewers: Technical owner; product owner. Security owner not required.
-- Artifact revision: Part 2 content sha256 prefix `07271dbf4394` together with Part 1 `df832e549b04` (the revisions reviewed, before this approval was recorded); built on SDD `725dded2aabe`, requirements `9de8b75c23bc`, analysis `47b4c2cbed5a`
-- Decision and conditions: Approved, no conditions. One approval covers both parts; the R-001, R-004, and R-006 decisions are recorded in Part 1's Plan Approval gate.
-- Evidence: Recorded user response in conversation: "Approve the plan."
-- Approved by / at: User (technical and product owner), 2026-10-02 17:09
+- Artifact revision: to be recorded at re-approval; built on SDD `725dded2aabe`, requirements `9de8b75c23bc`, analysis `47b4c2cbed5a`
+- Decision and conditions: Reset to Pending by the same patch (see Part 1). History: approved 2026-10-02 17:09 for Part 2 `07271dbf4394` together with Part 1 `df832e549b04`.
+- Evidence: Previous approval: user reply "Approve the plan." Re-approval: pending.
+- Approved by / at: — (previous approval: user, 2026-10-02 17:09)
 
-Any material plan edit resets this approval to `Pending`. `cg-exec` must not start Phase 11 until Part 1's checkpoints through Checkpoint 4 are approved and this gate is approved for the current revision.
+Any material plan edit resets this approval to `Pending`. `cg-exec` must not start a Part 2 phase until its `Depends on` tasks are complete, the start condition of its wave in Part 1's Parallel execution protocol is met, and this gate is approved for the current revision.
 
 ### Checkpoint Approvals
 | Checkpoint | Prerequisite phases | Status | Artifact revision | Evidence / approver |
 |---|---|---|---|---|
-| Checkpoint 5 | Phases 11–13 | Pending | — | — |
-| Checkpoint 6 | Phases 14–15 | Pending | — | — |
+| Checkpoint 4 | Phases 14–15 | Pending | — | — |
 | Final Checkpoint | Phases 16–18 | Pending | — | — |
+
+Phases 11, 12, and 13 are covered by Part 1's Checkpoint 2 (Phase 12, Wave 1) and Checkpoint 3 (Phases 11 and 13, Wave 2).
 
 ## Task Dependency Graph (Part 2 tasks)
 | Task | Depends on | Inputs supplied by dependencies | Topological order | Delegation / parallelization |
 |------|------------|---------------------------------|-------------------|------------------------------|
-| TASK-011 | TASK-002, TASK-009, TASK-006 | `Park` type, format helpers, jest-dom and user-event installed | 11 | Sequential |
-| TASK-012 | TASK-001 | Vitest runner and alias | 12 | Safe to delegate (can run any time after Phase 1; shares no files) |
-| TASK-013 | TASK-006 | jest-dom installed | 13 | Sequential |
+| TASK-011 | TASK-002, TASK-009, TASK-006 | `Park` type, format helpers, jest-dom and user-event installed | 11 | Wave 2 — parallel (after Wave 1 merges) |
+| TASK-012 | TASK-001 | Vitest runner and alias | 12 | Wave 1 — parallel (shares no files) |
+| TASK-013 | TASK-006 | jest-dom installed | 13 | Wave 2 — parallel (after Wave 1 merges) |
 | TASK-014 | TASK-004, TASK-007, TASK-010, TASK-011, TASK-013 | Hook, context, list, details, layout | 14 | Sequential |
 | TASK-015 | TASK-005, TASK-006, TASK-008, TASK-014 | `getMapView`, `ParkMap`, `useFocusOnSelect`, explorer data states | 15 | Sequential |
 | TASK-016 | TASK-013, TASK-014, TASK-015 | Layout and complete explorer | 16 | Sequential |
@@ -473,19 +474,15 @@ Any material plan edit resets this approval to `Pending`. `cg-exec` must not sta
 
 ## Checkpoints
 
-### Checkpoint: After Phases 11–13
-- [ ] `npm test` passes
-- [ ] `npm run build` succeeds (route compiles)
-- [ ] Details panel, API route, and layout are working in isolation
-- [ ] Review with human before proceeding
-- [ ] Record an Approved checkpoint gate (Checkpoint 5) before Phase 14
+### Checkpoints for Phases 11–13
+Covered by Part 1: Phase 12 in Checkpoint 2 (Wave 1) and Phases 11 and 13 in Checkpoint 3 (Wave 2). The `npm run build` check that proves the `/api/parks` route compiles is part of the Wave 1 verification (RESULT-150 to 159).
 
-### Checkpoint: After Phases 14–15
+### Checkpoint 4: After Phases 14–15
 - [ ] `npm test` passes
 - [ ] End-to-end flow works for the core feature in tests: load, select by list and marker, focus handoff, failure paths
 - [ ] R-003 and R-004 outcomes recorded
 - [ ] Review with human before proceeding
-- [ ] Record an Approved checkpoint gate (Checkpoint 6) before Phase 16
+- [ ] Record an Approved checkpoint gate (Checkpoint 4) before Phase 16
 
 ### Final Checkpoint (After Phases 16–18)
 - [ ] `npm test` passes, including `src/traceability.test.ts` and `src/repo-structure.test.ts`
@@ -500,14 +497,14 @@ Any material plan edit resets this approval to `Pending`. `cg-exec` must not sta
 
 | Category | Tasks | Rule |
 |----------|--------|------|
-| Safe to parallelize | TASK-012 (with Part 1's TASK-003, 005, 009) | No dependency path and no shared allowed changes |
-| Must be sequential | TASK-011 → TASK-014 → TASK-015 → TASK-016 → TASK-017 → TASK-018 | Each produces required input for the next; TASK-014 and TASK-015 both edit `ParkExplorer.tsx` |
-| Needs coordination | None | Contracts are fixed in the SDD |
+| Safe to parallelize | TASK-012 in Wave 1 (with Part 1's TASK-006, 007, 008, 009); TASK-011 and TASK-013 in Wave 2 (with Part 1's TASK-010) | Within a wave: no dependency path and no shared allowed changes |
+| Must be sequential | TASK-014 → TASK-015 → TASK-016 → TASK-017 → TASK-018 | Each produces required input for the next; TASK-014 and TASK-015 both edit `ParkExplorer.tsx` |
+| Needs coordination | Shared evidence files, RESULT-ID ranges, merge order | See Part 1, Parallel execution protocol |
 
 ## TODO List (ordered)
-- [ ] Phase 11: Park details panel
-- [ ] Phase 12: `GET /api/parks` route
-- [ ] Phase 13: `ExplorerLayout`
+- [ ] Phase 11: Park details panel (Wave 2)
+- [ ] Phase 12: `GET /api/parks` route (Wave 1)
+- [ ] Phase 13: `ExplorerLayout` (Wave 2)
 - [ ] Phase 14: `ParkExplorer` data states
 - [ ] Phase 15: Map wiring and focus handoff
 - [ ] Phase 16: App shell: page, metadata, light theme

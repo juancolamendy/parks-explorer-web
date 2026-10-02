@@ -123,12 +123,12 @@ Only what the SDD did not pin.
 ## Human Quality Gates
 
 ### Plan Approval
-- Status: Approved
+- Status: **Pending** (reset 2026-10-02 17:31 by the parallel-waves patch; re-approval needed before any further phase starts)
 - Required reviewers: Technical owner; product owner. Security owner not required (no auth, PII, secrets).
-- Artifact revision: Part 1 content sha256 prefix `df832e549b04` and Part 2 content sha256 prefix `07271dbf4394` (the revisions reviewed, before this approval was recorded); built on SDD `725dded2aabe`, requirements `9de8b75c23bc`, analysis `47b4c2cbed5a`
-- Decision and conditions: Approved, no conditions. Decisions recorded with the approval: **R-001** the user agrees with the `react-leaflet` Hippocratic-2.1 licence, so Phase 6 is unblocked on that point; **R-004** accepted (`vitest-axe` 0.1.0, with the `axe-core` fallback); **R-006** accepted (lockfile excluded from the 5-file count).
-- Evidence: Recorded user response in conversation: "Approve the plan." with the three decisions above.
-- Approved by / at: User (technical and product owner), 2026-10-02 17:09
+- Artifact revision: to be recorded at re-approval (Part 1 and Part 2 content digests); built on SDD `725dded2aabe`, requirements `9de8b75c23bc`, analysis `47b4c2cbed5a`
+- Decision and conditions: Reset to Pending because the remaining plan changed: checkpoints regrouped around parallel waves, RESULT-ID ranges reserved, the parallelization tables corrected, and Part 2's prerequisite relaxed (see **Parallel execution protocol**). Phases 1–5, their evidence, and Checkpoint 1 are unaffected. **History (still in force, not reopened):** approved 2026-10-02 17:09 for Part 1 `df832e549b04` and Part 2 `07271dbf4394`, with decisions **R-001** (user agrees with the `react-leaflet` Hippocratic-2.1 licence), **R-004** (`vitest-axe` 0.1.0 accepted, `axe-core` fallback), **R-006** (lockfile excluded from the 5-file count).
+- Evidence: Previous approval: user reply "Approve the plan." Re-approval: pending.
+- Approved by / at: — (previous approval: user, 2026-10-02 17:09)
 
 Any material plan edit resets this approval to `Pending`. `cg-exec` must not start Phase 1 until this gate is approved for the current revision.
 
@@ -136,11 +136,9 @@ Any material plan edit resets this approval to `Pending`. `cg-exec` must not sta
 | Checkpoint | Prerequisite phases | Status | Artifact revision | Evidence / approver |
 |---|---|---|---|---|
 | Checkpoint 1 | Phases 1–3 | **Approved** (2026-10-02 17:21, no conditions; evidence: user reply "approve. continue" to the Checkpoint 1 request) | Part 1 as committed at `001a4e1` (the Phase 3 commit) | Phases 1–3 complete. Results covered: RESULT-001 to RESULT-007 (Phase 1), RESULT-008 to RESULT-013 (Phase 2), RESULT-014 to RESULT-023 (Phase 3); latest full suite RESULT-020: 3 files, 65 tests passed; lint RESULT-021, tsc RESULT-022, build RESULT-023 all exit 0. Awaiting human approval before Phase 4. |
-| Checkpoint 2 | Phases 4–6 | Pending | — | — |
-| Checkpoint 3 | Phases 7–8 | Pending | — | — |
-| Checkpoint 4 | Phases 9–10 | Pending | — | — |
-| Checkpoint 5 | Phases 11–13 | Pending | — | — |
-| Checkpoint 6 | Phases 14–15 | Pending | — | — |
+| Checkpoint 2 | Wave 1: Phases 4–9 and 12 (4 and 5 are done; 6, 7, 8, 9, 12 run in parallel) | Pending | — | — |
+| Checkpoint 3 | Wave 2: Phases 10, 11, 13 (run in parallel) | Pending | — | — |
+| Checkpoint 4 | Phases 14–15 | Pending | — | — |
 | Final Checkpoint | Phases 16–18 | Pending | — | — |
 
 ## Layer Coverage **(plan-set scope)**
@@ -181,17 +179,54 @@ PR slices are review units on the single plan branch (sequential, stacked or mer
 | TASK-003 | TASK-001 | Vitest runner | 3 | Safe to delegate (no shared files with 5, 9, 12) |
 | TASK-004 | TASK-002, TASK-003 | `Park` type, `normalizeParks`, `fetchParks` | 4 | Sequential |
 | TASK-005 | TASK-002 | `Park`/`Coordinates` types | 5 | Safe to delegate |
-| TASK-006 | TASK-002, TASK-004, TASK-005 | Types, jsdom + Testing Library installed, `getMapView` | 6 | Sequential |
-| TASK-007 | TASK-004, TASK-002 | `useParksFetch`, types | 7 | Sequential |
-| TASK-008 | TASK-004 | jsdom + Testing Library installed | 8 | Sequential |
-| TASK-009 | TASK-002 | `Park` type | 9 | Safe to delegate |
-| TASK-010 | TASK-002, TASK-006 | Types; jest-dom and user-event installed | 10 | Sequential |
+| TASK-006 | TASK-002, TASK-004, TASK-005 | Types, jsdom + Testing Library installed, `getMapView` | 6 | Wave 1 — parallel (the only Wave 1 task that edits `package.json`) |
+| TASK-007 | TASK-004, TASK-002 | `useParksFetch`, types | 7 | Wave 1 — parallel (needs nothing from TASK-006) |
+| TASK-008 | TASK-004 | jsdom + Testing Library installed | 8 | Wave 1 — parallel |
+| TASK-009 | TASK-002 | `Park` type | 9 | Wave 1 — parallel |
+| TASK-010 | TASK-002, TASK-006 | Types; jest-dom and user-event installed | 10 | Wave 2 — parallel (after Wave 1 merges) |
 
 ## Git isolation **(plan-set scope)**
 **One worktree per plan** (sequential phases share it). `{WT}` = `.worktree` (neither `.worktree` nor `.worktrees` exists, so create `.worktree`). No ticket ID is inferable.
 - One-time setup from `main` (clean, at commit `4523a59`): `printf '.worktree/\n' >> .git/info/exclude` (A4), then `git worktree add .worktree/parks-explorer -b plan/parks-explorer`, then `npm install` inside the worktree (`node_modules` is not shared).
-- Extra worktrees: only for Safe-to-parallelize tasks (TASK-003, 005, 009, 012) when run concurrently: `git worktree add .worktree/parks-explorer-p{N} -b plan/parks-explorer-p{N} plan/parks-explorer`. Default is sequential in the single worktree.
+- Extra worktrees: one per parallel phase in Wave 1 (Phases 6, 7, 8, 9, 12) and Wave 2 (Phases 10, 11, 13), created from the plan branch HEAD at the start of the wave: `git worktree add .worktree/parks-explorer-p{N} -b plan/parks-explorer-p{N} plan/parks-explorer`, then `npm install` inside it. Phases 14–18 run sequentially in the single plan worktree. See **Parallel execution protocol**.
 - Commit style follows `AGENTS.md`: no ticket prefix; one conventional-type commit per phase. Never push without an explicit request.
+
+## Parallel execution protocol (plan-set scope)
+_Added 2026-10-02 17:31 (parallel-waves patch). Applies to the remaining phases only; Phases 1–5 are complete and unchanged. The per-phase **Git:** lines of the phases below are superseded by this section._
+
+**Waves** (from the task dependency graph: within a wave no task depends on another and no two share an allowed file):
+
+| Wave | Phases | Starts when | Ends with |
+|---|---|---|---|
+| 1 | 6, 7, 8, 9, 12 | Plan Approval is re-approved | Merge in phase order, wave verification, Checkpoint 2 |
+| 2 | 10, 11, 13 | Checkpoint 2 Approved | Merge in phase order, wave verification, Checkpoint 3 |
+| 3 | 14, then 15 (sequential) | Checkpoint 3 Approved | Checkpoint 4 |
+| 4 | 16, 17, 18 (sequential) | Checkpoint 4 Approved | Final Checkpoint |
+
+**Rules**
+1. Each parallel phase runs in its own extra worktree from the plan branch HEAD at wave start (see Git isolation) and executes exactly one phase through the normal `cg-exec` flow (docs check, tests first with a red baseline, implementation, checks, self-review, task record, one atomic commit on its `plan/parks-explorer-p{N}` branch).
+2. A worker edits only its own allowed files, its own phase's evidence block, checkbox, and TODO line in the plan, and appends its own rows to `docs/traceability/index.md`. It must not edit another phase's evidence.
+3. **RESULT-ID ranges** are reserved per worker so parallel runs cannot collide. A worker allocates from the start of its range upward; unused IDs stay unused and are never reused (RESULT-037 to 039 are an unused gap).
+
+   | Worker | Reserved range |
+   |---|---|
+   | Phase 6 | RESULT-040 to 069 |
+   | Phase 7 | RESULT-070 to 089 |
+   | Phase 8 | RESULT-090 to 109 |
+   | Phase 9 | RESULT-110 to 129 |
+   | Phase 12 | RESULT-130 to 149 |
+   | Wave 1 verification (integrator) | RESULT-150 to 159 |
+   | Phase 10 | RESULT-160 to 179 |
+   | Phase 11 | RESULT-180 to 199 |
+   | Phase 13 | RESULT-200 to 219 |
+   | Wave 2 verification (integrator) | RESULT-220 to 229 |
+   | Phases 14–18 (sequential) | next unused from RESULT-230 |
+
+4. **Merge:** the integrator (the main session) merges worker branches into `plan/parks-explorer` one at a time in phase order with `git merge --no-ff` (each phase commit stays individually revertible). Conflicts are expected only in the plan file and the traceability index; resolution: keep both sides, keep every checkbox that either side set to `[x]`, and sort traceability rows by task number. Any other conflict stops the merge and is reported to the user.
+5. **Wave verification:** after the last merge of a wave, run `npm install`, `npm test`, `npm run lint`, `npx tsc --noEmit`, and `npm run build` on the plan branch, record each as a `RESULT-*` in the verification range for that wave, set the wave checkpoint to Pending with the covered results, and stop for human approval.
+6. **A false phase spec:** a worker whose phase spec is false stops (`cg-exec` step 2.4), reports, and does not widen scope. The other workers continue; the wave merge proceeds without the stopped phase only on the user's decision.
+7. **Part 2:** Phases 11, 12, and 13 belong to these waves, so Part 2's prerequisite is relaxed from "Part 1 complete" to "this phase's `Depends on` tasks are complete and its wave has started" (see Part 2).
+8. **Review slices:** the PR table above is unaffected by execution order.
 
 ## Phase evidence template (plan-set scope)
 Every phase's **Completion evidence** records: changed files; red-baseline command, exit status, and expected failure; green commands and exit codes; test counts; evidence anchors; discovered decisions or bounded follow-ups (or `None discovered`); remaining uncertainty. Red baselines use `npm test -- <test file>` once Phase 1 is complete. A red baseline for a new module is a failed import or failed assertion, never a skipped test.
@@ -808,30 +843,28 @@ Every phase's **Completion evidence** records: changed files; red-baseline comma
 - [x] Review with human before proceeding
 - [x] Record an Approved checkpoint gate before Phase 4
 
-### Checkpoint 2: After Phases 4–6
-- [ ] `npm test` passes
+### Checkpoint 2: After Wave 1 (Phases 4–9 and 12)
+- [ ] Worker branches for Phases 6, 7, 8, 9, 12 merged into the plan branch in phase order; conflicts limited to the plan file and the traceability index
+- [ ] `npm install`, `npm test`, `npm run lint`, `npx tsc --noEmit`, `npm run build` pass on the merged branch (RESULT-150 to 159)
 - [ ] High-risk items addressed and verified: normalization security (2), network failure (3), fetch races (4)
-- [ ] R-001 decision recorded; Leaflet feasibility note and R-002 outcome recorded (6)
+- [ ] Leaflet feasibility note and R-002 outcome recorded (6); selection state and focus hook work in isolation (7, 8); format helpers and the API route are done (9, 12)
 - [ ] Review with human before proceeding
-- [ ] Record an Approved checkpoint gate before Phase 7
+- [ ] Record an Approved checkpoint gate before Wave 2 (Phases 10, 11, 13)
 
-### Checkpoint 3: After Phases 7–8
-- [ ] `npm test` passes
-- [ ] Selection state and focus hook working in isolation
-- [ ] Record an Approved checkpoint gate before Phase 9
-
-### Checkpoint 4: After Phases 9–10
-- [ ] `npm test`, `npm run lint`, `npx tsc --noEmit`, `npm run build` pass
-- [ ] Part 1 handoff: all non-composed building blocks complete; proceed to Part 2
-- [ ] Record an Approved checkpoint gate before Phase 11
+### Checkpoint 3: After Wave 2 (Phases 10, 11, 13)
+- [ ] Worker branches for Phases 10, 11, 13 merged into the plan branch in phase order
+- [ ] `npm install`, `npm test`, `npm run lint`, `npx tsc --noEmit`, `npm run build` pass on the merged branch (RESULT-220 to 229)
+- [ ] List, details panel, and layout work in isolation; all non-composed building blocks complete
+- [ ] Review with human before proceeding
+- [ ] Record an Approved checkpoint gate (Checkpoint 3) before Phase 14
 
 ## Parallelization
 
 | Category | Tasks | Rule |
 |----------|--------|------|
-| Safe to parallelize | TASK-003, TASK-005, TASK-009 (and TASK-012 in Part 2) | No dependency path and no shared allowed changes; run in extra worktrees only if concurrent |
-| Must be sequential | TASK-001 → TASK-002 → TASK-004 → TASK-006 → TASK-007; TASK-006 → TASK-010 | Each produces required input (types, installed dependencies, hooks) for the next |
-| Needs coordination | None | No shared contract needs defining first (contracts are fixed in the SDD) |
+| Safe to parallelize | Wave 1: TASK-006, TASK-007, TASK-008, TASK-009, TASK-012. Wave 2: TASK-010, TASK-011, TASK-013 | Within a wave: no dependency path and no shared allowed changes (only TASK-006 edits `package.json`). Wave 2 starts after Wave 1 is merged because TASK-010, 011, 013 need TASK-006's installed packages and TASK-011 needs TASK-009 |
+| Must be sequential | TASK-014 → TASK-015 → TASK-016 → TASK-017 → TASK-018 | Each produces required input for the next; TASK-014 and TASK-015 both edit `ParkExplorer.tsx` |
+| Needs coordination | Shared evidence files (the plan file and `docs/traceability/index.md`), RESULT-ID ranges, merge order | Handled by the Parallel execution protocol: reserved ranges, phase-order merges, documented conflict resolution |
 
 ## TODO List (ordered)
 - [x] Phase 1: Test harness
@@ -839,10 +872,10 @@ Every phase's **Completion evidence** records: changed files; red-baseline comma
 - [x] Phase 3: `fetchParks` client call
 - [x] Phase 4: `useParksFetch` hook
 - [x] Phase 5: Map view helper
-- [ ] Phase 6: `ParkMap` component
-- [ ] Phase 7: `ParksContext` and `useParks`
-- [ ] Phase 8: `useFocusOnSelect`
-- [ ] Phase 9: Format helpers
-- [ ] Phase 10: `ParkList`
+- [ ] Phase 6: `ParkMap` component (Wave 1)
+- [ ] Phase 7: `ParksContext` and `useParks` (Wave 1)
+- [ ] Phase 8: `useFocusOnSelect` (Wave 1)
+- [ ] Phase 9: Format helpers (Wave 1)
+- [ ] Phase 10: `ParkList` (Wave 2)
 
-**Part 1 handoff checkpoint:** this part does not complete the feature. Continue with `docs/plan/tasks_parks-explorer-2026-10-02-part-02-of-02.md` (Phases 11–18).
+**Part 1 handoff:** this part does not complete the feature. Part 2 (`docs/plan/tasks_parks-explorer-2026-10-02-part-02-of-02.md`, Phases 11–18) shares the waves: its Phase 12 runs in Wave 1 and its Phases 11 and 13 in Wave 2; Phases 14–18 start after Checkpoint 3.
